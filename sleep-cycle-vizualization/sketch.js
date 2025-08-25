@@ -70,7 +70,7 @@ let cyclesToDrawPerDay = {};
  */
 function preload() {
     // sleepData1の読み込み
-    loadJSON('sleep_wake_data.json', (data) => {
+    loadJSON('../data/sleep_wake_data.json', (data) => {
       sleepData1 = data;
       // sleepData2も読み込まれているかチェックしてから日付計算を呼び出す
       if (sleepData2) { // sleepData2が先に読み込まれている場合
@@ -79,7 +79,7 @@ function preload() {
     });
   
     // sleepData2の読み込み
-    loadJSON('sleep_wake_data_2.json', (data) => {
+    loadJSON('../data/sleep_wake_data_2.json', (data) => {
       sleepData2 = data;
       // sleepData1も読み込まれているかチェックしてから日付計算を呼び出す
       if (sleepData1) { // sleepData1が先に読み込まれている場合
@@ -88,7 +88,7 @@ function preload() {
     });
 
     // イベントデータをロード
-    loadJSON('event.json', (data) => { // ファイル名を 'event.json' に変更
+    loadJSON('../data/event.json', (data) => { // ファイル名を 'event.json' に変更
     eventData = data; // 変数名を eventData に変更
     if (sleepData1 && sleepData2) {
       calculateMinMaxDatesFromData();
