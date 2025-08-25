@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>max sleep visualization</title>
+    <style>
+        body {
+            display: flex;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            overflow-y: auto;
+        }
+        #controls {
+            /* オーバーレイ表示のためのスタイルに変更 */
+            position: fixed;
+            top: 0;
+            left: -300px; /* 初期状態では画面外に隠す */
+            width: 300px;
+            height: 100vh;
+            padding: 15px;
+            background-color: #f0f0f0;
+            overflow-y: auto;
+            box-sizing: border-box;
+            transition: left 0.3s ease-in-out; /* アニメーションを追加 */
+            z-index: 2000; /* 他の要素の上に表示 */
+        }
+        #controls.open {
+            left: 0; /* 'open' クラスが付いたら画面内に表示 */
+        }
+        #toggle-button {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 2001; /* パネルの上に表示 */
+        }
+        #controls h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        #controls h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .slider-with-value {
+            display: flex;
+            align-items: center;
+        }
+        .slider-with-value input[type="range"] {
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+        .color-picker-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .color-picker-group input[type="color"] {
+            width: 40px;
+            height: 30px;
+            border: none;
+            padding: 0;
+        }
+        canvas {
+            display: block;
+        }
+        .date-input-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .date-input-group label {
+            width: 80px;
+            margin-bottom: 0;
+        }
+        .date-input-group input[type="date"] {
+            flex-grow: 1;
+        }
+    </style>
+</head>
+<body>
+    <button id="toggle-button">設定パネルを開く</button>
+
+    <div id="controls">
+        <h2>設定</h2>
+
+        <h3>期間設定</h3>
+        <div class="control-group">
+            <div class="date-input-group">
+                <label for="startDatePicker">開始日:</label>
+                <input type="date" id="startDatePicker" value="2024-10-01">
+            </div>
+            <div class="date-input-group">
+                <label for="endDatePicker">終了日:</label>
+                <input type="date" id="endDatePicker" value="2025-07-25">
+            </div>
+            <button id="applyDateRangeButton">期間を適用</button>
+        </div>
+        <div class="control-group">
+            <label for="childBirthDatePicker">子供の出生日:</label>
+            <input type="date" id="childBirthDatePicker" value="2025-01-18"> </div>
+        <h3>表示設定</h3>
+        
+        <div class="control-group">
+            <label for="rowHeightSlider">日の高さ (px):</label>
+            <div class="slider-with-value">
+                <input type="range" id="rowHeightSlider" min="1" max="100" value="4">
+                <span id="rowHeightValue">4</span>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <label for="rowGapSlider">日の間の隙間 (px):</label>
+            <div class="slider-with-value">
+                <input type="range" id="rowGapSlider" min="0" max="50" value="0">
+                <span id="rowGapValue">0</span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label for="showTimeTextCheckbox">時刻テキストを表示:</label>
+            <input type="checkbox" id="showTimeTextCheckbox">
+        </div>
+
+        <h3>睡眠ラインの太さ</h3>
+        <div class="control-group">
+            <label for="sleepLineWeightSlider">ラインの太さ:</label>
+            <div class="slider-with-value">
+                <input type="range" id="sleepLineWeightSlider" min="1" max="50" value="4">
+                <span id="sleepLineWeightValue">4</span> px
+            </div>
+        </div>
+
+        <h3>一人目のデータ</h3>
+        <div class="control-group">
+            <label for="sleepColorPicker1">睡眠色:</label>
+            <div class="color-picker-group">
+                <input type="color" id="sleepColorPicker1" value="#4CAF50">
+                <input type="range" id="sleepColorAlphaSlider1" min="0" max="255" value="200">
+                <span id="sleepColorAlphaValue1">200</span> (透明度)
+            </div>
+        </div>
+
+        <h3>二人目のデータ</h3>
+        <div class="control-group">
+            <label for="sleepColorPicker2">睡眠色:</label>
+            <div class="color-picker-group">
+                <input type="color" id="sleepColorPicker2" value="#2196F3">
+                <input type="range" id="sleepColorAlphaSlider2" min="0" max="255" value="200">
+                <span id="sleepColorAlphaValue2">200</span> (透明度)
+            </div>
+        </div>
+
+        <h3>共通の色設定</h3>
+        <div class="control-group">
+            <label for="timeAxisColorPicker">時刻軸の色:</label>
+            <input type="color" id="timeAxisColorPicker" value="#333333">
+        </div>
+        <div class="control-group">
+            <label for="textColorPicker">テキストの色:</label>
+            <input type="color" id="textColorPicker" value="#333333">
+        </div>
+        <div class="control-group">
+            <label for="dotSizeSlider">睡眠ドットのサイズ:</label>
+            <div class="slider-with-value">
+                <input type="range" id="dotSizeSlider" min="0" max="20" value="0">
+                <span id="dotSizeValue">0</span> px
+            </div>
+        </div>
+
+        <h3>背景色設定</h3>
+        <div class="control-group">
+            <label for="dayBgColorPicker">日中背景色 (7:00-19:00):</label>
+            <input type="color" id="dayBgColorPicker" value="#FFFFFF">
+        </div>
+        <div class="control-group">
+            <label for="nightBgColorPicker">夜間背景色 (19:00-翌6:59):</label>
+            <input type="color" id="nightBgColorPicker" value="#F8F8F8">
+        </div>
+        <div class="control-group">
+            <label for="noRecordDayBgColorPicker">記録なし日の背景色:</label>
+            <input type="color" id="noRecordDayBgColorPicker" value="#E0E0E0">
+        </div>
+
+        <h3>補助線設定 (0:00)</h3>
+        <div class="control-group">
+            <label for="guideLineWeightSlider">補助線の太さ:</label>
+            <div class="slider-with-value">
+                <input type="range" id="guideLineWeightSlider" min="0" max="10" value="1">
+                <span id="guideLineWeightValue">1</span> px
+            </div>
+        </div>
+        <div class="control-group">
+            <label for="guideLineColorPicker">補助線の色:</label>
+            <div class="color-picker-group">
+                <input type="color" id="guideLineColorPicker" value="#FF0000">
+                <input type="range" id="guideLineAlphaSlider" min="0" max="255" value="100">
+                <span id="guideLineAlphaValue">100</span> (透明度)
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="sketch.js"></script>
+</body>
+</html>
