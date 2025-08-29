@@ -451,7 +451,7 @@ function drawBars(data, yBase) {
  */
 function drawDateAndEvents(dateStr, yBase) {
     const visualizationRightX = width - EVENT_TEXT_WIDTH - MARGIN_RIGHT;
-    const requiredVerticalSpace = 18; 
+    const requiredVerticalSpace = 80; 
     const totalRowHeightPerDay = ROW_HEIGHT + ROW_GAP;
     let skipInterval = 1;
     if (totalRowHeightPerDay < requiredVerticalSpace) {

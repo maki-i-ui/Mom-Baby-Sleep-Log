@@ -556,7 +556,7 @@ function prepareSleepCyclesForDrawing() {
  * 各日付の背景色（記録なし）と睡眠サイクルを描画する関数
  */
 function drawDateRows() {
-    const requiredVerticalSpace = 18; 
+    const requiredVerticalSpace = 80; 
     const totalRowHeightPerDay = ROW_HEIGHT + ROW_GAP; 
     let skipInterval = 1;
     if (totalRowHeightPerDay < requiredVerticalSpace) {
