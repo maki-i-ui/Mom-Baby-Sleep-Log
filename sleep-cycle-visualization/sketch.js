@@ -20,6 +20,8 @@ let DOT_SIZE;
 let DAY_BG_COLOR;
 let NIGHT_BG_COLOR;
 let NO_RECORD_DAY_BG_COLOR; // 記録なし日の背景色
+// 追加: キャンバス全体の背景色
+let CANVAS_BG_COLOR;
 
 // --- 補助線に関する設定変数 ---
 let GUIDE_LINE_WEIGHT;
@@ -48,6 +50,7 @@ let timeAxisColorPicker, textColorPicker;
 let dotSizeSlider, dotSizeValue;
 let dayBgColorPicker, nightBgColorPicker;
 let noRecordDayBgColorPicker;
+let canvasBgColorPicker;
 
 let guideLineWeightSlider, guideLineWeightValue, guideLineColorPicker, guideLineAlphaSlider, guideLineAlphaValue;
 let showTimeTextCheckbox;
@@ -217,6 +220,9 @@ function setup() {
   noRecordDayBgColorPicker = select('#noRecordDayBgColorPicker');
   noRecordDayBgColorPicker.input(updateVisualization);
 
+  canvasBgColorPicker = select('#canvasBgColorPicker');
+    canvasBgColorPicker.input(updateVisualization);
+
   showTimeTextCheckbox = select('#showTimeTextCheckbox');
   showTimeTextCheckbox.changed(updateVisualization);
 
@@ -327,6 +333,11 @@ function updateVisualization() {
   const noRecordDayBgB = unhex(noRecordDayBgColorPicker.value().substring(5, 7));
   NO_RECORD_DAY_BG_COLOR = color(noRecordDayBgR, noRecordDayBgG, noRecordDayBgB);
 
+  const canvasBgR = unhex(canvasBgColorPicker.value().substring(1, 3));
+    const canvasBgG = unhex(canvasBgColorPicker.value().substring(3, 5));
+    const canvasBgB = unhex(canvasBgColorPicker.value().substring(5, 7));
+    CANVAS_BG_COLOR = color(canvasBgR, canvasBgG, canvasBgB);
+
   SHOW_TIME_TEXT = showTimeTextCheckbox.checked();
 
   GUIDE_LINE_WEIGHT = parseInt(guideLineWeightSlider.value());
@@ -353,7 +364,7 @@ function updateVisualization() {
  * メイン描画ループ: redraw()が呼び出された時のみ実行される
  */
 function draw() {
-  background(255);
+    background(CANVAS_BG_COLOR); // キャンバス全体の背景色を設定
   drawBackgrounds(); // 全体背景の描画を分離
   drawDateRows();
   drawTimeAxis();
