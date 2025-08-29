@@ -19,7 +19,9 @@ let DOT_SIZE;
 
 let DAY_BG_COLOR;
 let NIGHT_BG_COLOR;
-let NO_RECORD_DAY_BG_COLOR; // 記録なし日の背景色
+// let NO_RECORD_DAY_BG_COLOR; // 記録なし日の背景色
+let NO_RECORD_DAY_BG_COLOR1; 
+let NO_RECORD_DAY_BG_COLOR2; 
 // 追加: キャンバス全体の背景色
 let CANVAS_BG_COLOR;
 
@@ -49,7 +51,9 @@ let sleepColorPicker2, sleepColorAlphaSlider2, sleepColorAlphaValue2;
 let timeAxisColorPicker, textColorPicker;
 let dotSizeSlider, dotSizeValue;
 let dayBgColorPicker, nightBgColorPicker;
-let noRecordDayBgColorPicker;
+// let noRecordDayBgColorPicker;
+let noRecordDayBgColorPicker1, noRecordDayBgAlphaSlider1, noRecordDayBgAlphaValue1;
+let noRecordDayBgColorPicker2, noRecordDayBgAlphaSlider2, noRecordDayBgAlphaValue2;
 let canvasBgColorPicker;
 
 let guideLineWeightSlider, guideLineWeightValue, guideLineColorPicker, guideLineAlphaSlider, guideLineAlphaValue;
@@ -217,8 +221,19 @@ function setup() {
   nightBgColorPicker = select('#nightBgColorPicker');
   nightBgColorPicker.input(updateVisualization);
 
-  noRecordDayBgColorPicker = select('#noRecordDayBgColorPicker');
-  noRecordDayBgColorPicker.input(updateVisualization);
+    // 追加: 一人目の記録なし日背景色のUI要素を紐づけ
+    noRecordDayBgColorPicker1 = select('#noRecordDayBgColorPicker1');
+    noRecordDayBgAlphaSlider1 = select('#noRecordDayBgAlphaSlider1');
+    noRecordDayBgAlphaValue1 = select('#noRecordDayBgAlphaValue1');
+    noRecordDayBgColorPicker1.input(updateVisualization);
+    noRecordDayBgAlphaSlider1.input(updateVisualization);
+
+    // 追加: 二人目の記録なし日背景色のUI要素を紐づけ
+    noRecordDayBgColorPicker2 = select('#noRecordDayBgColorPicker2');
+    noRecordDayBgAlphaSlider2 = select('#noRecordDayBgAlphaSlider2');
+    noRecordDayBgAlphaValue2 = select('#noRecordDayBgAlphaValue2');
+    noRecordDayBgColorPicker2.input(updateVisualization);
+    noRecordDayBgAlphaSlider2.input(updateVisualization);
 
   canvasBgColorPicker = select('#canvasBgColorPicker');
     canvasBgColorPicker.input(updateVisualization);
@@ -328,10 +343,21 @@ function updateVisualization() {
   DAY_BG_COLOR = color(unhex(dayBgColorPicker.value().substring(1, 3)), unhex(dayBgColorPicker.value().substring(3, 5)), unhex(dayBgColorPicker.value().substring(5, 7)));
   NIGHT_BG_COLOR = color(unhex(nightBgColorPicker.value().substring(1, 3)), unhex(nightBgColorPicker.value().substring(3, 5)), unhex(nightBgColorPicker.value().substring(5, 7)));
   
-  const noRecordDayBgR = unhex(noRecordDayBgColorPicker.value().substring(1, 3));
-  const noRecordDayBgG = unhex(noRecordDayBgColorPicker.value().substring(3, 5));
-  const noRecordDayBgB = unhex(noRecordDayBgColorPicker.value().substring(5, 7));
-  NO_RECORD_DAY_BG_COLOR = color(noRecordDayBgR, noRecordDayBgG, noRecordDayBgB);
+    // 追加: 一人目の色の設定
+    const noRecordDayBgR1 = unhex(noRecordDayBgColorPicker1.value().substring(1, 3));
+    const noRecordDayBgG1 = unhex(noRecordDayBgColorPicker1.value().substring(3, 5));
+    const noRecordDayBgB1 = unhex(noRecordDayBgColorPicker1.value().substring(5, 7));
+    const noRecordDayBgA1 = parseInt(noRecordDayBgAlphaSlider1.value());
+    NO_RECORD_DAY_BG_COLOR1 = color(noRecordDayBgR1, noRecordDayBgG1, noRecordDayBgB1, noRecordDayBgA1);
+    noRecordDayBgAlphaValue1.html(noRecordDayBgA1);
+
+    // 追加: 二人目の色の設定
+    const noRecordDayBgR2 = unhex(noRecordDayBgColorPicker2.value().substring(1, 3));
+    const noRecordDayBgG2 = unhex(noRecordDayBgColorPicker2.value().substring(3, 5));
+    const noRecordDayBgB2 = unhex(noRecordDayBgColorPicker2.value().substring(5, 7));
+    const noRecordDayBgA2 = parseInt(noRecordDayBgAlphaSlider2.value());
+    NO_RECORD_DAY_BG_COLOR2 = color(noRecordDayBgR2, noRecordDayBgG2, noRecordDayBgB2, noRecordDayBgA2);
+    noRecordDayBgAlphaValue2.html(noRecordDayBgA2);
 
   const canvasBgR = unhex(canvasBgColorPicker.value().substring(1, 3));
     const canvasBgG = unhex(canvasBgColorPicker.value().substring(3, 5));
@@ -556,7 +582,7 @@ function prepareSleepCyclesForDrawing() {
  * 各日付の背景色（記録なし）と睡眠サイクルを描画する関数
  */
 function drawDateRows() {
-    const requiredVerticalSpace = 18; 
+    const requiredVerticalSpace = 80; 
     const totalRowHeightPerDay = ROW_HEIGHT + ROW_GAP; 
     let skipInterval = 1;
     if (totalRowHeightPerDay < requiredVerticalSpace) {
@@ -587,7 +613,7 @@ function drawDateRows() {
         const yForPerson1 = currentYBase + (0 * SUB_ROW_HEIGHT); 
         if (!hasDataEntry1ForCurrentDate) { 
             noFill();
-            stroke(NO_RECORD_DAY_BG_COLOR);
+            stroke(NO_RECORD_DAY_BG_COLOR1); 
             strokeWeight(1);
             
             const rectX = MARGIN_LEFT;
@@ -608,7 +634,7 @@ function drawDateRows() {
         
         if (!hasDataEntry2ForCurrentDate && (childBirthDateMs === 0 || currentDisplayDateMs >= childBirthDateMs)) { 
             noFill();
-            stroke(NO_RECORD_DAY_BG_COLOR);
+            stroke(NO_RECORD_DAY_BG_COLOR2); 
             strokeWeight(1);
             
             const rectX = MARGIN_LEFT;
@@ -627,8 +653,9 @@ function drawDateRows() {
         
         // 日付テキスト
         if (i % skipInterval === 0 || allDatesInPeriod.length === 1) {
+            noStroke();
             fill(TEXT_COLOR);
-            textSize(14);
+            textSize(12);
             textAlign(RIGHT, CENTER);
             text(currentDisplayDateStr.substring(5), MARGIN_LEFT - 10, currentYBase + ROW_HEIGHT / 2);
         }
@@ -639,6 +666,7 @@ function drawDateRows() {
 
         // イベントテキストの描画
         if (eventData && eventData[currentDisplayDateStr]) {
+            noStroke();
             fill(TEXT_COLOR);
             textSize(12);
             textAlign(LEFT, CENTER);
@@ -670,37 +698,44 @@ function drawDateRows() {
     }
 }
 
+
 function drawTimeAxis() {
-  stroke(TIME_AXIS_COLOR);
-  strokeWeight(1);
-  line(MARGIN_LEFT, MARGIN_TOP, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT, MARGIN_TOP);
+    stroke(TIME_AXIS_COLOR);
+    strokeWeight(1);
+    line(MARGIN_LEFT, MARGIN_TOP, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT, MARGIN_TOP);
 
-  fill(TEXT_COLOR);
-  textSize(12);
-  textAlign(CENTER, BOTTOM);
+    fill(TEXT_COLOR);
+    textSize(12);
+    textAlign(CENTER, BOTTOM);
 
-  // 表示範囲は 7:00 から翌日 7:00
-  const displayStartMinute = DISPLAY_START_MINUTE_ABSOLUTE;
-  const displayEndMinute = DISPLAY_END_MINUTE_ABSOLUTE;
+    // 描画したい時刻を0:00からの絶対分数で定義
+    const timesToDraw = [
+        { hour: 7, text: '07:00' },
+        { hour: 12, text: '12:00' },
+        { hour: 19, text: '19:00' },
+        { hour: 24, text: '00:00 (+1d)' }, // 翌日0:00
+        { hour: 31, text: '07:00 (+1d)' } // 翌日7:00
+    ];
 
-  for (let h = DISPLAY_START_HOUR; h <= DISPLAY_END_HOUR; h += 2) { // 7時から翌7時まで2時間刻み
-    let currentHour = h;
-    let displayHourText;
-    let currentMinuteAbsolute = currentHour * 60; // 0:00基準の絶対分数
+    // 表示範囲は 7:00 から翌日 7:00
+    const displayStartMinute = DISPLAY_START_HOUR * 60;
+    const displayEndMinute = DISPLAY_END_HOUR * 60;
 
-    // 表示するテキストの調整
-    if (currentHour === 24) { // 24時を翌00:00
-      displayHourText = '翌00:00';
-    } else if (currentHour > 24) { // 翌日の時刻 (例: 翌2時、翌4時など)
-      displayHourText = `翌${nf(currentHour - 24, 2)}:00`;
-    } else { // 当日の時刻
-      displayHourText = nf(currentHour, 2) + ':00';
-    }
-    
-    const x = map(currentMinuteAbsolute, displayStartMinute, displayEndMinute, MARGIN_LEFT, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT);
+    for (const time of timesToDraw) {
+        // 時刻を絶対分数に変換
+        const currentMinuteAbsolute = time.hour * 60;
 
-    line(x, MARGIN_TOP - 5, x, MARGIN_TOP);
-    text(displayHourText, x, MARGIN_TOP - TEXT_OFFSET_Y * 3);
+        // X座標を計算
+        const x = map(currentMinuteAbsolute, displayStartMinute, displayEndMinute, MARGIN_LEFT, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT);
+
+        // 目盛り線の描画
+        line(x, MARGIN_TOP - 5, x, MARGIN_TOP);
+
+        // テキストを描画する直前でストロークを無効化
+        noStroke(); // <-- ここを追加しました
+
+        // ラベルテキストの描画
+        text(time.text, x, MARGIN_TOP - TEXT_OFFSET_Y * 3);
     }
 }
 
