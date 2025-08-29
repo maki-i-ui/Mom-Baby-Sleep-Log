@@ -19,6 +19,7 @@ let TEXT_COLOR;
 let DAY_BG_COLOR;
 let NIGHT_BG_COLOR;
 let NO_RECORD_DAY_BG_COLOR; // 記録なし日の背景色
+let CANVAS_BG_COLOR;       // 追加: キャンバス全体の背景色
 
 // --- 補助線に関する設定変数 ---
 let GUIDE_LINE_WEIGHT;
@@ -41,9 +42,13 @@ let rowHeightSlider, rowGapSlider;
 let sleepLineWeightSlider, sleepLineWeightValue; 
 let sleepColorPicker1, sleepColorAlphaSlider1, sleepColorAlphaValue1;
 let sleepColorPicker2, sleepColorAlphaSlider2, sleepColorAlphaValue2;
+
+// 追加されたカラーピッカーの参照
 let timeAxisColorPicker, textColorPicker;
 let dayBgColorPicker, nightBgColorPicker;
 let noRecordDayBgColorPicker;
+let canvasBgColorPicker;     // 追加: キャンバス背景色ピッカー
+
 let guideLineWeightSlider, guideLineWeightValue, guideLineColorPicker, guideLineAlphaSlider, guideLineAlphaValue;
 let showTimeTextCheckbox;
 let toggleButton; // 追加
@@ -167,6 +172,7 @@ function setup() {
     sleepColorPicker2.input(updateVisualization);
     sleepColorAlphaSlider2.input(updateVisualization);
 
+    // 新しいカラーピッカーのUI要素を紐づける
     timeAxisColorPicker = select('#timeAxisColorPicker');
     timeAxisColorPicker.input(updateVisualization);
 
@@ -182,6 +188,9 @@ function setup() {
     noRecordDayBgColorPicker = select('#noRecordDayBgColorPicker');
     noRecordDayBgColorPicker.input(updateVisualization);
 
+    canvasBgColorPicker = select('#canvasBgColorPicker');
+    canvasBgColorPicker.input(updateVisualization);
+
     showTimeTextCheckbox = select('#showTimeTextCheckbox');
     showTimeTextCheckbox.changed(updateVisualization);
 
@@ -194,7 +203,6 @@ function setup() {
     guideLineAlphaValue = select('#guideLineAlphaValue');
     guideLineColorPicker.input(updateVisualization);
     guideLineAlphaSlider.input(updateVisualization);
-
     generateAllDatesInPeriod(); 
     noLoop();
 }
@@ -283,13 +291,18 @@ function updateVisualization() {
     const noRecordDayBgB = unhex(noRecordDayBgColorPicker.value().substring(5, 7));
     NO_RECORD_DAY_BG_COLOR = color(noRecordDayBgR, noRecordDayBgG, noRecordDayBgB);
 
+    const canvasBgR = unhex(canvasBgColorPicker.value().substring(1, 3));
+    const canvasBgG = unhex(canvasBgColorPicker.value().substring(3, 5));
+    const canvasBgB = unhex(canvasBgColorPicker.value().substring(5, 7));
+    CANVAS_BG_COLOR = color(canvasBgR, canvasBgG, canvasBgB);
+
     SHOW_TIME_TEXT = showTimeTextCheckbox.checked();
 
     GUIDE_LINE_WEIGHT = parseInt(guideLineWeightSlider.value());
     const guideLineHex = guideLineColorPicker.value();
     const guideLineA = parseInt(guideLineAlphaSlider.value());
     GUIDE_LINE_COLOR = color(unhex(guideLineHex.substring(1, 3)), unhex(guideLineHex.substring(3, 5)), unhex(guideLineHex.substring(5, 7)), guideLineA);
-
+    
     rowHeightValue.html(ROW_HEIGHT);
     rowGapValue.html(ROW_GAP);
     sleepLineWeightValue.html(SLEEP_LINE_WEIGHT);
@@ -306,7 +319,7 @@ function updateVisualization() {
  * メイン描画ループ: redraw()が呼び出された時のみ実行される
  */
 function draw() {
-    background(255);
+    background(CANVAS_BG_COLOR); // キャンバス全体の背景色を設定
     drawBarGraph();
 }
 
@@ -417,7 +430,7 @@ function drawBars(data, yBase) {
     // Person 1の棒グラフを描画
     if (data.person1 > 0) {
         const barLength1 = map(data.person1, 0, MAX_SLEEP_MINUTES, 0, vizWidth);
-        const yCenter = yBase + (ROW_HEIGHT / 4);
+        const yCenter = yBase + (ROW_HEIGHT / 2);
         stroke(SLEEP_COLOR1);
         strokeWeight(SLEEP_LINE_WEIGHT);
         line(MARGIN_LEFT, yCenter, MARGIN_LEFT + barLength1, yCenter);
@@ -426,7 +439,7 @@ function drawBars(data, yBase) {
     // Person 2の棒グラフを描画
     if (data.person2 > 0) {
         const barLength2 = map(data.person2, 0, MAX_SLEEP_MINUTES, 0, vizWidth);
-        const yCenter = yBase + (ROW_HEIGHT * 3 / 4);
+        const yCenter = yBase + (ROW_HEIGHT / 2);
         stroke(SLEEP_COLOR2);
         strokeWeight(SLEEP_LINE_WEIGHT);
         line(MARGIN_LEFT, yCenter, MARGIN_LEFT + barLength2, yCenter);
