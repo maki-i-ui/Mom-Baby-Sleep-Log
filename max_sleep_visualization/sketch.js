@@ -463,7 +463,7 @@ function drawDateAndEvents(dateStr, yBase) {
     if (allDatesInPeriod.indexOf(dateStr) % skipInterval === 0 || allDatesInPeriod.length === 1) {
         noStroke();
         fill(TEXT_COLOR);
-        textSize(14);
+        textSize(12);
         textAlign(RIGHT, CENTER);
         text(dateStr.substring(5), MARGIN_LEFT - 10, yBase + ROW_HEIGHT / 2);
     }

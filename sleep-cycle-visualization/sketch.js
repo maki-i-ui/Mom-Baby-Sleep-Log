@@ -629,7 +629,7 @@ function drawDateRows() {
         if (i % skipInterval === 0 || allDatesInPeriod.length === 1) {
             noStroke();
             fill(TEXT_COLOR);
-            textSize(14);
+            textSize(12);
             textAlign(RIGHT, CENTER);
             text(currentDisplayDateStr.substring(5), MARGIN_LEFT - 10, currentYBase + ROW_HEIGHT / 2);
         }
