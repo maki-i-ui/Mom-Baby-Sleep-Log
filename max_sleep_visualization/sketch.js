@@ -461,6 +461,7 @@ function drawDateAndEvents(dateStr, yBase) {
 
     // 日付テキスト
     if (allDatesInPeriod.indexOf(dateStr) % skipInterval === 0 || allDatesInPeriod.length === 1) {
+        noStroke();
         fill(TEXT_COLOR);
         textSize(14);
         textAlign(RIGHT, CENTER);
@@ -469,6 +470,7 @@ function drawDateAndEvents(dateStr, yBase) {
 
     // イベントテキストの描画
     if (eventData && eventData[dateStr]) {
+        noStroke();
         fill(TEXT_COLOR);
         textSize(12);
         textAlign(LEFT, CENTER);
@@ -534,6 +536,7 @@ function drawAxesAndGuidelines() {
     line(visualizationRightX, MARGIN_TOP, visualizationRightX, height - MARGIN_BOTTOM);
 
     // 軸テキスト
+    
     fill(TEXT_COLOR);
     textSize(12);
     textAlign(CENTER, BOTTOM);
@@ -551,6 +554,7 @@ function drawAxesAndGuidelines() {
     line(x6h, MARGIN_TOP, x6h, height - MARGIN_BOTTOM);
     line(x18h, MARGIN_TOP, x18h, height - MARGIN_BOTTOM);
 
+    noStroke();
     fill(TEXT_COLOR);
     textAlign(CENTER, BOTTOM);
     text('6h', x6h, MARGIN_TOP - TEXT_OFFSET_Y * 3);

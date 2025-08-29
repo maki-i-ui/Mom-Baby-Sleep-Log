@@ -627,6 +627,7 @@ function drawDateRows() {
         
         // 日付テキスト
         if (i % skipInterval === 0 || allDatesInPeriod.length === 1) {
+            noStroke();
             fill(TEXT_COLOR);
             textSize(14);
             textAlign(RIGHT, CENTER);
@@ -639,6 +640,7 @@ function drawDateRows() {
 
         // イベントテキストの描画
         if (eventData && eventData[currentDisplayDateStr]) {
+            noStroke();
             fill(TEXT_COLOR);
             textSize(12);
             textAlign(LEFT, CENTER);
@@ -700,6 +702,7 @@ function drawTimeAxis() {
     const x = map(currentMinuteAbsolute, displayStartMinute, displayEndMinute, MARGIN_LEFT, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT);
 
     line(x, MARGIN_TOP - 5, x, MARGIN_TOP);
+    noStroke();
     text(displayHourText, x, MARGIN_TOP - TEXT_OFFSET_Y * 3);
     }
 }
