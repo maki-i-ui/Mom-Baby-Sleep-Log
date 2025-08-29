@@ -672,38 +672,44 @@ function drawDateRows() {
     }
 }
 
+
 function drawTimeAxis() {
-  stroke(TIME_AXIS_COLOR);
-  strokeWeight(1);
-  line(MARGIN_LEFT, MARGIN_TOP, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT, MARGIN_TOP);
+    stroke(TIME_AXIS_COLOR);
+    strokeWeight(1);
+    line(MARGIN_LEFT, MARGIN_TOP, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT, MARGIN_TOP);
 
-  fill(TEXT_COLOR);
-  textSize(12);
-  textAlign(CENTER, BOTTOM);
+    fill(TEXT_COLOR);
+    textSize(12);
+    textAlign(CENTER, BOTTOM);
 
-  // 表示範囲は 7:00 から翌日 7:00
-  const displayStartMinute = DISPLAY_START_MINUTE_ABSOLUTE;
-  const displayEndMinute = DISPLAY_END_MINUTE_ABSOLUTE;
+    // 描画したい時刻を0:00からの絶対分数で定義
+    const timesToDraw = [
+        { hour: 7, text: '07:00' },
+        { hour: 12, text: '12:00' },
+        { hour: 19, text: '19:00' },
+        { hour: 24, text: '00:00 (+1d)' }, // 翌日0:00
+        { hour: 31, text: '07:00 (+1d)' } // 翌日7:00
+    ];
 
-  for (let h = DISPLAY_START_HOUR; h <= DISPLAY_END_HOUR; h += 2) { // 7時から翌7時まで2時間刻み
-    let currentHour = h;
-    let displayHourText;
-    let currentMinuteAbsolute = currentHour * 60; // 0:00基準の絶対分数
+    // 表示範囲は 7:00 から翌日 7:00
+    const displayStartMinute = DISPLAY_START_HOUR * 60;
+    const displayEndMinute = DISPLAY_END_HOUR * 60;
 
-    // 表示するテキストの調整
-    if (currentHour === 24) { // 24時を翌00:00
-      displayHourText = '翌00:00';
-    } else if (currentHour > 24) { // 翌日の時刻 (例: 翌2時、翌4時など)
-      displayHourText = `翌${nf(currentHour - 24, 2)}:00`;
-    } else { // 当日の時刻
-      displayHourText = nf(currentHour, 2) + ':00';
-    }
-    
-    const x = map(currentMinuteAbsolute, displayStartMinute, displayEndMinute, MARGIN_LEFT, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT);
+    for (const time of timesToDraw) {
+        // 時刻を絶対分数に変換
+        const currentMinuteAbsolute = time.hour * 60;
 
-    line(x, MARGIN_TOP - 5, x, MARGIN_TOP);
-    noStroke();
-    text(displayHourText, x, MARGIN_TOP - TEXT_OFFSET_Y * 3);
+        // X座標を計算
+        const x = map(currentMinuteAbsolute, displayStartMinute, displayEndMinute, MARGIN_LEFT, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT);
+
+        // 目盛り線の描画
+        line(x, MARGIN_TOP - 5, x, MARGIN_TOP);
+
+        // テキストを描画する直前でストロークを無効化
+        noStroke(); // <-- ここを追加しました
+
+        // ラベルテキストの描画
+        text(time.text, x, MARGIN_TOP - TEXT_OFFSET_Y * 3);
     }
 }
 
