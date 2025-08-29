@@ -18,7 +18,9 @@ let TEXT_COLOR;
 
 let DAY_BG_COLOR;
 let NIGHT_BG_COLOR;
-let NO_RECORD_DAY_BG_COLOR; // 記録なし日の背景色
+// let NO_RECORD_DAY_BG_COLOR; // 記録なし日の背景色
+let NO_RECORD_DAY_BG_COLOR1; 
+let NO_RECORD_DAY_BG_COLOR2; 
 let CANVAS_BG_COLOR;       // 追加: キャンバス全体の背景色
 
 // --- 補助線に関する設定変数 ---
@@ -46,7 +48,9 @@ let sleepColorPicker2, sleepColorAlphaSlider2, sleepColorAlphaValue2;
 // 追加されたカラーピッカーの参照
 let timeAxisColorPicker, textColorPicker;
 let dayBgColorPicker, nightBgColorPicker;
-let noRecordDayBgColorPicker;
+// let noRecordDayBgColorPicker;
+let noRecordDayBgColorPicker1, noRecordDayBgAlphaSlider1, noRecordDayBgAlphaValue1;
+let noRecordDayBgColorPicker2, noRecordDayBgAlphaSlider2, noRecordDayBgAlphaValue2;
 let canvasBgColorPicker;     // 追加: キャンバス背景色ピッカー
 
 let guideLineWeightSlider, guideLineWeightValue, guideLineColorPicker, guideLineAlphaSlider, guideLineAlphaValue;
@@ -185,8 +189,19 @@ function setup() {
     nightBgColorPicker = select('#nightBgColorPicker');
     nightBgColorPicker.input(updateVisualization);
 
-    noRecordDayBgColorPicker = select('#noRecordDayBgColorPicker');
-    noRecordDayBgColorPicker.input(updateVisualization);
+    // 追加: 一人目の記録なし日背景色のUI要素を紐づけ
+    noRecordDayBgColorPicker1 = select('#noRecordDayBgColorPicker1');
+    noRecordDayBgAlphaSlider1 = select('#noRecordDayBgAlphaSlider1');
+    noRecordDayBgAlphaValue1 = select('#noRecordDayBgAlphaValue1');
+    noRecordDayBgColorPicker1.input(updateVisualization);
+    noRecordDayBgAlphaSlider1.input(updateVisualization);
+
+    // 追加: 二人目の記録なし日背景色のUI要素を紐づけ
+    noRecordDayBgColorPicker2 = select('#noRecordDayBgColorPicker2');
+    noRecordDayBgAlphaSlider2 = select('#noRecordDayBgAlphaSlider2');
+    noRecordDayBgAlphaValue2 = select('#noRecordDayBgAlphaValue2');
+    noRecordDayBgColorPicker2.input(updateVisualization);
+    noRecordDayBgAlphaSlider2.input(updateVisualization);
 
     canvasBgColorPicker = select('#canvasBgColorPicker');
     canvasBgColorPicker.input(updateVisualization);
@@ -286,10 +301,21 @@ function updateVisualization() {
     DAY_BG_COLOR = color(unhex(dayBgColorPicker.value().substring(1, 3)), unhex(dayBgColorPicker.value().substring(3, 5)), unhex(dayBgColorPicker.value().substring(5, 7)));
     NIGHT_BG_COLOR = color(unhex(nightBgColorPicker.value().substring(1, 3)), unhex(nightBgColorPicker.value().substring(3, 5)), unhex(nightBgColorPicker.value().substring(5, 7)));
   
-    const noRecordDayBgR = unhex(noRecordDayBgColorPicker.value().substring(1, 3));
-    const noRecordDayBgG = unhex(noRecordDayBgColorPicker.value().substring(3, 5));
-    const noRecordDayBgB = unhex(noRecordDayBgColorPicker.value().substring(5, 7));
-    NO_RECORD_DAY_BG_COLOR = color(noRecordDayBgR, noRecordDayBgG, noRecordDayBgB);
+    // 追加: 一人目の色の設定
+    const noRecordDayBgR1 = unhex(noRecordDayBgColorPicker1.value().substring(1, 3));
+    const noRecordDayBgG1 = unhex(noRecordDayBgColorPicker1.value().substring(3, 5));
+    const noRecordDayBgB1 = unhex(noRecordDayBgColorPicker1.value().substring(5, 7));
+    const noRecordDayBgA1 = parseInt(noRecordDayBgAlphaSlider1.value());
+    NO_RECORD_DAY_BG_COLOR1 = color(noRecordDayBgR1, noRecordDayBgG1, noRecordDayBgB1, noRecordDayBgA1);
+    noRecordDayBgAlphaValue1.html(noRecordDayBgA1);
+
+    // 追加: 二人目の色の設定
+    const noRecordDayBgR2 = unhex(noRecordDayBgColorPicker2.value().substring(1, 3));
+    const noRecordDayBgG2 = unhex(noRecordDayBgColorPicker2.value().substring(3, 5));
+    const noRecordDayBgB2 = unhex(noRecordDayBgColorPicker2.value().substring(5, 7));
+    const noRecordDayBgA2 = parseInt(noRecordDayBgAlphaSlider2.value());
+    NO_RECORD_DAY_BG_COLOR2 = color(noRecordDayBgR2, noRecordDayBgG2, noRecordDayBgB2, noRecordDayBgA2);
+    noRecordDayBgAlphaValue2.html(noRecordDayBgA2);
 
     const canvasBgR = unhex(canvasBgColorPicker.value().substring(1, 3));
     const canvasBgG = unhex(canvasBgColorPicker.value().substring(3, 5));
@@ -493,7 +519,7 @@ function drawNoRecordPattern(dateStr, yBase) {
     const childBirthDateMs = childBirthDatePicker.value() ? new Date(childBirthDatePicker.value()).getTime() : 0;
     
     noFill();
-    stroke(NO_RECORD_DAY_BG_COLOR);
+    stroke(NO_RECORD_DAY_BG_COLOR1);
     strokeWeight(1);
     const lineSpacing = 4;
     const subRowHeight = ROW_HEIGHT / 2;
@@ -509,6 +535,7 @@ function drawNoRecordPattern(dateStr, yBase) {
         }
     }
 
+    stroke(NO_RECORD_DAY_BG_COLOR2);
     // Person 2 (子供) の網掛け
     if (!hasDataEntry2 && (childBirthDateMs === 0 || currentDisplayDateMs >= childBirthDateMs)) {
         const rectX = MARGIN_LEFT;
