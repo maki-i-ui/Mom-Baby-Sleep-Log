@@ -6,7 +6,7 @@ let minDateFromData = null;
 let maxDateFromData = null;
 // --- 可視化に関する設定変数 ---
 let ROW_HEIGHT; // 1日の列全体の高さ (二人分を合わせた高さ)
-let ROW_GAP;    // 日の間の隙間
+let ROW_GAP; // 日の間の隙間
 let SUB_ROW_HEIGHT; // 各人分の行の高さ (計算で求める)
 
 let SLEEP_LINE_WEIGHT; // 睡眠ラインの太さ
@@ -42,10 +42,13 @@ let rowHeightSlider, rowGapSlider;
 let sleepLineWeightSlider, sleepLineWeightValue; 
 let sleepColorPicker1, sleepColorAlphaSlider1, sleepColorAlphaValue1;
 let sleepColorPicker2, sleepColorAlphaSlider2, sleepColorAlphaValue2;
+
+// 追加されたカラーピッカーの参照
 let timeAxisColorPicker, textColorPicker;
 let dotSizeSlider, dotSizeValue;
 let dayBgColorPicker, nightBgColorPicker;
 let noRecordDayBgColorPicker;
+
 let guideLineWeightSlider, guideLineWeightValue, guideLineColorPicker, guideLineAlphaSlider, guideLineAlphaValue;
 let showTimeTextCheckbox;
 let toggleButton; // 追加
@@ -59,7 +62,7 @@ const DISPLAY_START_HOUR = 7;
 const DISPLAY_END_HOUR = 7 + 24; // 翌日の7時
 
 const DISPLAY_START_MINUTE_ABSOLUTE = DISPLAY_START_HOUR * 60; // 7時の絶対分数 (0:00基準)
-const DISPLAY_END_MINUTE_ABSOLUTE = DISPLAY_END_HOUR * 60;     // 翌7時の絶対分数 (0:00基準)
+const DISPLAY_END_MINUTE_ABSOLUTE = DISPLAY_END_HOUR * 60; // 翌7時の絶対分数 (0:00基準)
 
 // 事前計算された描画データを格納するグローバル変数
 let cyclesToDrawPerDay = {};
@@ -193,7 +196,8 @@ function setup() {
   sleepColorAlphaValue2 = select('#sleepColorAlphaValue2');
   sleepColorPicker2.input(updateVisualization);
   sleepColorAlphaSlider2.input(updateVisualization);
-
+  
+  // 新しいカラーピッカーのUI要素を紐づける
   timeAxisColorPicker = select('#timeAxisColorPicker');
   timeAxisColorPicker.input(updateVisualization);
 
@@ -203,7 +207,7 @@ function setup() {
   dotSizeSlider = select('#dotSizeSlider');
   dotSizeValue = select('#dotSizeValue');
   dotSizeSlider.input(updateVisualization);
-
+  
   dayBgColorPicker = select('#dayBgColorPicker');
   dayBgColorPicker.input(updateVisualization);
 
@@ -305,7 +309,8 @@ function updateVisualization() {
   const sleepB2 = unhex(sleepHex2.substring(5, 7));
   const sleepA2 = parseInt(sleepColorAlphaSlider2.value());
   SLEEP_COLOR2 = color(sleepR2, sleepG2, sleepB2, sleepA2);
-
+  
+  // 新しいカラーピッカーの値を取得
   const timeAxisHex = timeAxisColorPicker.value();
   TIME_AXIS_COLOR = color(unhex(timeAxisHex.substring(1, 3)), unhex(timeAxisHex.substring(3, 5)), unhex(timeAxisHex.substring(5, 7)));
 
@@ -565,9 +570,6 @@ function drawDateRows() {
         const currentDisplayDateObj = new Date(currentDisplayDateStr);
         const currentDisplayDateMs = new Date(currentDisplayDateObj.getFullYear(), currentDisplayDateObj.getMonth(), currentDisplayDateObj.getDate()).getTime();
 
-
-        noStroke();
-
         // --- 各個人の記録なし背景を描画 ---
         // Person 1 (母) の記録なし背景
         const hasDataEntry1ForCurrentDate = hasDataEntryForPerson(sleepData1, currentDisplayDateStr);
@@ -611,7 +613,7 @@ function drawDateRows() {
                 line(x, rectY, x + rectH, rectY + rectH);
             }
         }
-
+        
         // 日付テキスト
         if (i % skipInterval === 0 || allDatesInPeriod.length === 1) {
             fill(TEXT_COLOR);
@@ -651,9 +653,9 @@ function drawDateRows() {
             continue; 
         }
         
-        drawSleepWakeCycles(dataForThisRow.person1, SLEEP_COLOR1, 0, currentDisplayDateStr, currentYBase, i);
+        drawSleepWakeCycles(dataForThisRow.person1, SLEEP_COLOR1, currentYBase, currentDisplayDateStr, currentYBase, i);
         // 子供の睡眠サイクルも、出生日以降のみ描画されるように調整済みなので、ここでは単純に描画を呼び出す
-        drawSleepWakeCycles(dataForThisRow.person2, SLEEP_COLOR2, 1, currentDisplayDateStr, currentYBase, i);
+        drawSleepWakeCycles(dataForThisRow.person2, SLEEP_COLOR2, currentYBase, currentDisplayDateStr, currentYBase, i);
     }
 }
 
@@ -727,13 +729,13 @@ function drawZeroOClockGuideLine() {
  * 各日の睡眠・起床サイクルを横一列に描画します。(7:00-翌7:00基準)
  * @param {Array} cycles - 描画する睡眠サイクルデータの配列（すでにその行に描画すべきもののみ）
  * @param {p5.Color} color - 描画色
- * @param {number} personIndex - 0 (一人目) または 1 (二人目)
+ * @param {number} yBase - 描画する行のベースとなるY座標
  * @param {string} displayDateStr - 現在描画している行の基準となる日付文字列 (例: "2024-10-17")
  * @param {number} currentColumnYBase - 現在描画している列の基準Y座標
  * @param {number} currentColumnIndex - allDatesInPeriodにおける現在の描画列のインデックス
  */
-function drawSleepWakeCycles(cycles, color, personIndex, displayDateStr, currentColumnYBase, currentColumnIndex) {
-    const sleepLineCenterY = currentColumnYBase + (personIndex * SUB_ROW_HEIGHT) + (SUB_ROW_HEIGHT / 2);
+function drawSleepWakeCycles(cycles, color, yBase, displayDateStr, currentColumnYBase, currentColumnIndex) {
+    const sleepLineCenterY = yBase + (ROW_HEIGHT / 2); // Person1とPerson2を同じY座標に描画
 
     if (!cycles || cycles.length === 0) return;
 

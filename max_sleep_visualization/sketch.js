@@ -41,9 +41,12 @@ let rowHeightSlider, rowGapSlider;
 let sleepLineWeightSlider, sleepLineWeightValue; 
 let sleepColorPicker1, sleepColorAlphaSlider1, sleepColorAlphaValue1;
 let sleepColorPicker2, sleepColorAlphaSlider2, sleepColorAlphaValue2;
+
+// 追加されたカラーピッカーの参照
 let timeAxisColorPicker, textColorPicker;
 let dayBgColorPicker, nightBgColorPicker;
 let noRecordDayBgColorPicker;
+
 let guideLineWeightSlider, guideLineWeightValue, guideLineColorPicker, guideLineAlphaSlider, guideLineAlphaValue;
 let showTimeTextCheckbox;
 let toggleButton; // 追加
@@ -167,6 +170,7 @@ function setup() {
     sleepColorPicker2.input(updateVisualization);
     sleepColorAlphaSlider2.input(updateVisualization);
 
+    // 新しいカラーピッカーのUI要素を紐づける
     timeAxisColorPicker = select('#timeAxisColorPicker');
     timeAxisColorPicker.input(updateVisualization);
 
@@ -417,7 +421,7 @@ function drawBars(data, yBase) {
     // Person 1の棒グラフを描画
     if (data.person1 > 0) {
         const barLength1 = map(data.person1, 0, MAX_SLEEP_MINUTES, 0, vizWidth);
-        const yCenter = yBase + (ROW_HEIGHT / 4);
+        const yCenter = yBase + (ROW_HEIGHT / 2);
         stroke(SLEEP_COLOR1);
         strokeWeight(SLEEP_LINE_WEIGHT);
         line(MARGIN_LEFT, yCenter, MARGIN_LEFT + barLength1, yCenter);
@@ -426,7 +430,7 @@ function drawBars(data, yBase) {
     // Person 2の棒グラフを描画
     if (data.person2 > 0) {
         const barLength2 = map(data.person2, 0, MAX_SLEEP_MINUTES, 0, vizWidth);
-        const yCenter = yBase + (ROW_HEIGHT * 3 / 4);
+        const yCenter = yBase + (ROW_HEIGHT / 2);
         stroke(SLEEP_COLOR2);
         strokeWeight(SLEEP_LINE_WEIGHT);
         line(MARGIN_LEFT, yCenter, MARGIN_LEFT + barLength2, yCenter);
