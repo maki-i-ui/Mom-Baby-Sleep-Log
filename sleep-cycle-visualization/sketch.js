@@ -33,7 +33,7 @@ let EVENT_TEXT_PREFIX = "◀︎ "; // 追加: プレフィックス記号
 let SHOW_TIME_TEXT = true;
 
 // マージン (これらは固定)
-const MARGIN_TOP = 60;
+const MARGIN_TOP = 100;
 const MARGIN_BOTTOM = 30;
 const MARGIN_LEFT = 100;
 const MARGIN_RIGHT = 60; // 可視化領域とイベントテキスト領域の間のマージン
@@ -76,6 +76,13 @@ let cyclesToDrawPerDay = {};
 
 // The date of pregnancy day 0 (in YYYY-MM-DD format)
 const PREGNANCY_START_DATE = '2024-05-11'; 
+
+// --- 凡例に関する新しい変数 ---
+let isPerson1Visible = true; // 一人目のデータ表示フラグ
+let isPerson2Visible = true; // 二人目のデータ表示フラグ
+let hoveredLegendItem = null; // ホバー中の凡例アイテム ('person1', 'person2', or null)
+const LEGEND_BOX_SIZE = 15;
+const LEGEND_TEXT_OFFSET = 5;
 
 /**
  * 事前ロード関数: JSONデータを読み込む
@@ -260,6 +267,57 @@ function setup() {
 }
 
 /**
+ * マウスがクリックされたときに呼び出されます
+ */
+function mouseClicked() {
+    // 凡例のクリック判定
+    const legendX = MARGIN_LEFT;
+    const legendY = MARGIN_TOP / 2 - LEGEND_BOX_SIZE/2; // Y座標を調整して中央に合わせる
+    
+    // 一人目の凡例をクリック
+    const person1LegendX = legendX;
+    // 凡例のボックスとテキストの両方を検知範囲に含める
+    if (mouseX >= person1LegendX && mouseX <= person1LegendX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth('mom') && mouseY >= legendY && mouseY <= legendY + LEGEND_BOX_SIZE) {
+        isPerson1Visible = !isPerson1Visible;
+        redraw();
+    }
+
+    // 二人目の凡例をクリック
+    const person2LegendX = legendX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth('mom') + 40; // 40は適当な隙間
+    // 凡例のボックスとテキストの両方を検知範囲に含める
+    if (mouseX >= person2LegendX && mouseX <= person2LegendX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth('child') && mouseY >= legendY && mouseY <= legendY + LEGEND_BOX_SIZE) {
+        isPerson2Visible = !isPerson2Visible;
+        redraw();
+    }
+}
+
+
+/**
+ * マウスが動いたときに呼び出されます
+ */
+function mouseMoved() {
+    // 凡例のホバー判定
+    const legendX = MARGIN_LEFT;
+    const legendY = MARGIN_TOP / 2 - LEGEND_BOX_SIZE/2; // Y座標を調整
+    const person1LegendX = legendX;
+    const person2LegendX = legendX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth('mom') + 40;
+
+    let newHoveredItem = null;
+    if (mouseX >= person1LegendX && mouseX <= person1LegendX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth('mom') + 40 && mouseY >= legendY && mouseY <= legendY + LEGEND_BOX_SIZE) {
+        newHoveredItem = 'person1';
+    } else if (mouseX >= person2LegendX && mouseX <= person2LegendX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth('child') + 40 && mouseY >= legendY && mouseY <= legendY + LEGEND_BOX_SIZE) {
+        newHoveredItem = 'person2';
+    }
+
+    // ホバー状態が変化した場合のみ再描画
+    if (newHoveredItem !== hoveredLegendItem) {
+        hoveredLegendItem = newHoveredItem;
+        redraw();
+    }
+}
+
+
+/**
  * 指定された開始日から終了日までの全ての日付を生成し、allDatesInPeriodを更新する関数
  */
 function generateAllDatesInPeriod() {
@@ -334,7 +392,7 @@ function updateVisualization() {
   const sleepA2 = parseInt(sleepColorAlphaSlider2.value());
   SLEEP_COLOR2 = color(sleepR2, sleepG2, sleepB2, sleepA2);
   
-  // 新しいカラーピッカーの値を取得
+  // 新しいカラーピッカーのUI要素を紐づける
   const timeAxisHex = timeAxisColorPicker.value();
   TIME_AXIS_COLOR = color(unhex(timeAxisHex.substring(1, 3)), unhex(timeAxisHex.substring(3, 5)), unhex(timeAxisHex.substring(5, 7)));
 
@@ -346,7 +404,7 @@ function updateVisualization() {
   DAY_BG_COLOR = color(unhex(dayBgColorPicker.value().substring(1, 3)), unhex(dayBgColorPicker.value().substring(3, 5)), unhex(dayBgColorPicker.value().substring(5, 7)));
   NIGHT_BG_COLOR = color(unhex(nightBgColorPicker.value().substring(1, 3)), unhex(nightBgColorPicker.value().substring(3, 5)), unhex(nightBgColorPicker.value().substring(5, 7)));
   
-    // 追加: 一人目の色の設定
+    // 追加: 一人目の記録なし日背景色のUI要素を紐づけ
     const noRecordDayBgR1 = unhex(noRecordDayBgColorPicker1.value().substring(1, 3));
     const noRecordDayBgG1 = unhex(noRecordDayBgColorPicker1.value().substring(3, 5));
     const noRecordDayBgB1 = unhex(noRecordDayBgColorPicker1.value().substring(5, 7));
@@ -354,7 +412,7 @@ function updateVisualization() {
     NO_RECORD_DAY_BG_COLOR1 = color(noRecordDayBgR1, noRecordDayBgG1, noRecordDayBgB1, noRecordDayBgA1);
     noRecordDayBgAlphaValue1.html(noRecordDayBgA1);
 
-    // 追加: 二人目の色の設定
+    // 追加: 二人目の記録なし日背景色のUI要素を紐づけ
     const noRecordDayBgR2 = unhex(noRecordDayBgColorPicker2.value().substring(1, 3));
     const noRecordDayBgG2 = unhex(noRecordDayBgColorPicker2.value().substring(3, 5));
     const noRecordDayBgB2 = unhex(noRecordDayBgColorPicker2.value().substring(5, 7));
@@ -398,6 +456,7 @@ function draw() {
   drawDateRows();
   drawTimeAxis();
   drawZeroOClockGuideLine();
+  drawLegend(); // 凡例の描画を呼び出し
 }
 
 /**
@@ -582,7 +641,7 @@ function prepareSleepCyclesForDrawing() {
 }
 
 /**
- * 各日付の背景色（記録なし）と睡眠サイクルを描画する関数
+ * 各日の背景色（記録なし）と睡眠サイクルを描画する関数
  */
 function drawDateRows() {
     const requiredVerticalSpace = 80; 
@@ -630,7 +689,7 @@ function drawDateRows() {
             } else if (Math.abs(days) < 1) {
                 displayDateText = `${months} mo.`;
             } else {
-                // displayDateText = `${currentDate.getMonth() + 1}月${currentDate.getDate()}日`;
+                // displayDateText = `${currentDate.getMonth() + 1}/${currentDate.getDate()}`;
             }
         } else if (childBirthDate && currentDate.getTime() > childBirthDate.getTime()) {
             const daysSinceBirth = Math.floor((currentDate.getTime() - childBirthDate.getTime()) / oneDay);
@@ -640,18 +699,11 @@ function drawDateRows() {
             if (Math.abs(days) < 1) {
                 displayDateText = `${months} mo. old`;
             } else {
-                // displayDateText = `${currentDate.getMonth() + 1}月${currentDate.getDate()}日`;
+                // displayDateText = `${currentDate.getMonth() + 1}/${currentDate.getDate()}`;
             }
         } else {
             displayDateText = `${currentDate.getMonth() + 1}/${currentDate.getDate()}`;
         }
-
-        noStroke();
-        fill(TEXT_COLOR);
-        textSize(12);
-        textAlign(RIGHT, CENTER);
-
-        text(displayDateText, MARGIN_LEFT - 10, currentYBase + ROW_HEIGHT / 2);
         
         // --- 各個人の記録なし背景を描画 ---
         // Person 1 (母) の記録なし背景
@@ -697,6 +749,14 @@ function drawDateRows() {
             }
         }
         
+        // 日付テキスト
+        noStroke();
+        fill(TEXT_COLOR);
+        textSize(12);
+        textAlign(RIGHT, CENTER);
+        // 変更後の表示テキストを使用
+        text(displayDateText, MARGIN_LEFT - 10, currentYBase + ROW_HEIGHT / 2);
+
         // 可視化領域の右端を計算
         // ウィンドウの幅 - イベントテキストの幅 - 右マージン
         const visualizationRightX = width - EVENT_TEXT_WIDTH - MARGIN_RIGHT;
@@ -728,13 +788,78 @@ function drawDateRows() {
             console.warn(`No pre-calculated sleep data for ${currentDisplayDateStr}. This should not happen if prepareSleepCyclesForDrawing is called correctly.`);
             continue; 
         }
-        
-        drawSleepWakeCycles(dataForThisRow.person1, SLEEP_COLOR1, currentYBase, currentDisplayDateStr, currentYBase, i);
-        // 子供の睡眠サイクルも、出生日以降のみ描画されるように調整済みなので、ここでは単純に描画を呼び出す
-        drawSleepWakeCycles(dataForThisRow.person2, SLEEP_COLOR2, currentYBase, currentDisplayDateStr, currentYBase, i);
+
+        // 凡例の状態に基づいて描画を呼び出す
+        if (isPerson1Visible) {
+            drawSleepWakeCycles(dataForThisRow.person1, getDisplayColor('person1', SLEEP_COLOR1), currentYBase, currentDisplayDateStr, currentYBase, i);
+        }
+        if (isPerson2Visible) {
+            // 子供の睡眠サイクルも、出生日以降のみ描画されるように調整済みなので、ここでは単純に描画を呼び出す
+            drawSleepWakeCycles(dataForThisRow.person2, getDisplayColor('person2', SLEEP_COLOR2), currentYBase + SUB_ROW_HEIGHT, currentDisplayDateStr, currentYBase, i);
+        }
     }
 }
 
+/**
+ * 凡例を描画する関数
+ */
+function drawLegend() {
+    const legendY = MARGIN_TOP / 2 - LEGEND_BOX_SIZE/2; // Y座標を調整して中央に合わせる
+
+    // 凡例の項目
+    const legendItems = [
+        { label: 'mom', personId: 'person1', color: SLEEP_COLOR1, isVisible: isPerson1Visible },
+        { label: 'child', personId: 'person2', color: SLEEP_COLOR2, isVisible: isPerson2Visible }
+    ];
+
+    noStroke();
+    textSize(12);
+    textAlign(LEFT, TOP);
+
+    // X座標の初期位置
+    let currentX = MARGIN_LEFT;
+
+    for (const item of legendItems) {
+        // ホバーによる色の変更を適用
+        let displayColor = getDisplayColor(item.personId, item.color);
+
+        // 非表示の場合は、灰色にして透明度を下げる
+        if (!item.isVisible) {
+            displayColor = color(150, alpha(displayColor) * 0.5); // 灰色に設定
+        }
+
+        fill(displayColor);
+        rect(currentX, legendY, LEGEND_BOX_SIZE, LEGEND_BOX_SIZE);
+
+        // テキストの描画
+        fill(TEXT_COLOR);
+        text(item.label, currentX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET, legendY);
+
+        // 次の凡例のX座標を計算
+        currentX += LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth(item.label) + 40; // 40は適当な隙間
+    }
+}
+
+/**
+ * 表示色を返すヘルパー関数。ホバー状態によって透明度を調整する。
+ */
+function getDisplayColor(personId, originalColor) {
+    // ユーザーの新しいリクエスト: データが非表示の場合は、ホバーによる半透明化を無効にする
+    if (personId === 'person1' && !isPerson1Visible) {
+        return originalColor;
+    }
+    if (personId === 'person2' && !isPerson2Visible) {
+        return originalColor;
+    }
+
+    // ホバー中のアイテムが存在し、それがこのpersonIdと一致しない場合、半透明にする
+    if (hoveredLegendItem !== null && hoveredLegendItem !== personId) {
+        return color(red(originalColor), green(originalColor), blue(originalColor), alpha(originalColor) * 0.2); // 半透明に
+    }
+    
+    // それ以外の場合は元の色を返す
+    return originalColor;
+}
 
 function drawTimeAxis() {
     stroke(TIME_AXIS_COLOR);
@@ -768,10 +893,8 @@ function drawTimeAxis() {
         // 目盛り線の描画
         line(x, MARGIN_TOP - 5, x, MARGIN_TOP);
 
-        // テキストを描画する直前でストロークを無効化
-        noStroke(); // <-- ここを追加しました
-
         // ラベルテキストの描画
+        noStroke(); 
         text(time.text, x, MARGIN_TOP - TEXT_OFFSET_Y * 3);
     }
 }
