@@ -1,77 +1,75 @@
-let sleepData1; // 一人目のデータ
-let sleepData2; // 二人目のデータ
+let sleepData1; // Data for person 1
+let sleepData2; // Data for person 2
 let eventData;
-let allDatesInPeriod = []; // 期間内のすべての日付を格納する新しい変数
+let allDatesInPeriod = []; // A new variable to store all dates in the period
 let minDateFromData = null;
 let maxDateFromData = null;
 
-// --- グラフに関する設定変数 ---
-let ROW_HEIGHT; // 1日の列全体の高さ (棒グラフの高さ)
-let ROW_GAP;    // 日の間の隙間
+// --- Graph settings variables ---
+let ROW_HEIGHT; // The height of the entire day's row (height of the bar graph)
+let ROW_GAP;    // The gap between days
 
-let SLEEP_LINE_WEIGHT; // 棒の太さ（元のsleepLineWeightを使用）
+let SLEEP_LINE_WEIGHT; // The weight of the sleep bar (using the original sleepLineWeight)
 
-let SLEEP_COLOR1; // 一人目の睡眠色
-let SLEEP_COLOR2; // 二人目の睡眠色
+let SLEEP_COLOR1; // Sleep color for person 1
+let SLEEP_COLOR2; // Sleep color for person 2
 let TIME_AXIS_COLOR;
 let TEXT_COLOR;
 
 let DAY_BG_COLOR;
 let NIGHT_BG_COLOR;
-// let NO_RECORD_DAY_BG_COLOR; // 記録なし日の背景色
 let NO_RECORD_DAY_BG_COLOR1; 
 let NO_RECORD_DAY_BG_COLOR2; 
-let CANVAS_BG_COLOR;       // 追加: キャンバス全体の背景色
+let CANVAS_BG_COLOR;       // Added: Canvas background color
 
-// --- 補助線に関する設定変数 ---
+// --- Guide line settings variables ---
 let GUIDE_LINE_WEIGHT;
 let GUIDE_LINE_COLOR;
-let EVENT_TEXT_OFFSET; // 追加: イベントテキストのオフセット
-let EVENT_TEXT_PREFIX = "◀︎ "; // 追加: プレフィックス記号
+let EVENT_TEXT_OFFSET; // Added: Offset for event text
+let EVENT_TEXT_PREFIX = "◀︎ "; // Added: Prefix symbol
 let SHOW_TIME_TEXT = true;
 
-// マージン (これらは固定)
+// Margins (these are fixed)
 const MARGIN_TOP = 60;
 const MARGIN_BOTTOM = 30;
-const MARGIN_LEFT = 60;
-const MARGIN_RIGHT = 60; // 可視化領域とイベントテキスト領域の間のマージン
-const EVENT_TEXT_WIDTH = 300; // イベントテキストの固定幅を定義
+const MARGIN_LEFT = 100;
+const MARGIN_RIGHT = 60; // Margin between the visualization area and the event text area
+const EVENT_TEXT_WIDTH = 300; // Define a fixed width for event text
 
-const TEXT_OFFSET_Y = 5; // 時刻テキストのオフセット
+const TEXT_OFFSET_Y = 5; // Offset for time text
 
-// UI要素の参照
+// UI element references
 let rowHeightSlider, rowGapSlider;
 let sleepLineWeightSlider, sleepLineWeightValue; 
 let sleepColorPicker1, sleepColorAlphaSlider1, sleepColorAlphaValue1;
 let sleepColorPicker2, sleepColorAlphaSlider2, sleepColorAlphaValue2;
 
-// 追加されたカラーピッカーの参照
+// Added color picker references
 let timeAxisColorPicker, textColorPicker;
 let dayBgColorPicker, nightBgColorPicker;
-// let noRecordDayBgColorPicker;
 let noRecordDayBgColorPicker1, noRecordDayBgAlphaSlider1, noRecordDayBgAlphaValue1;
 let noRecordDayBgColorPicker2, noRecordDayBgAlphaSlider2, noRecordDayBgAlphaValue2;
-let canvasBgColorPicker;     // 追加: キャンバス背景色ピッカー
+let canvasBgColorPicker;     // Added: Canvas background color picker
 
 let guideLineWeightSlider, guideLineWeightValue, guideLineColorPicker, guideLineAlphaSlider, guideLineAlphaValue;
 let showTimeTextCheckbox;
-let toggleButton; // 追加
-let controlsPanel; // 追加
-// --- 期間設定用のUI要素 ---
-let startDatePicker, endDatePicker, applyDateRangeButton,childBirthDatePicker;
+let toggleButton; // Added
+let controlsPanel; // Added
+// --- UI elements for period settings ---
+let startDatePicker, endDatePicker, applyDateRangeButton, childBirthDatePicker;
 
-// --- 時間軸に関する定数 ---
-// 1日あたりの最大睡眠時間を24時間（1440分）とする
+// --- Time axis constants ---
+// Set the maximum sleep time per day to 24 hours (1440 minutes)
 const MAX_SLEEP_MINUTES = 24 * 60; 
 
-// 事前計算された描画データを格納するグローバル変数
+// Global variable to store pre-calculated drawing data
 let maxSleepPerDay = {};
 
-// 妊娠0日目の日付 (YYYY-MM-DD 形式)
+// The date of pregnancy day 0 (in YYYY-MM-DD format)
 const PREGNANCY_START_DATE = '2024-05-11'; 
 
 /**
- * 事前ロード関数: JSONデータを読み込む
+ * Preload function: Loads JSON data
  */
 function preload() {
     loadJSON('../data/sleep_wake_data.json', (data) => {
@@ -97,7 +95,7 @@ function preload() {
 }
 
 /**
- * sleepData1 と sleepData2 から最も古い日付と新しい日付を計算する関数
+ * A function to calculate the earliest and latest dates from sleepData1 and sleepData2
  */
 function calculateMinMaxDatesFromData() {
     if (!sleepData1 || !sleepData2 || minDateFromData !== null) {
@@ -114,7 +112,7 @@ function calculateMinMaxDatesFromData() {
     }
 
     if (allKeys.size === 0) {
-        console.warn("データファイルから日付が見つかりませんでした。");
+        console.warn("No dates found in data files.");
         return;
     }
 
@@ -125,11 +123,11 @@ function calculateMinMaxDatesFromData() {
     minDateFromData = sortedDates[0];
     maxDateFromData = sortedDates[sortedDates.length - 1];
 
-    console.log(`データ範囲: ${minDateFromData} から ${maxDateFromData}`);
+    console.log(`Data range: ${minDateFromData} to ${maxDateFromData}`);
 }
 
 /**
- * セットアップ関数: キャンバスの作成、UI要素の初期化、イベントリスナーの設定
+ * Setup function: Creates the canvas, initializes UI elements, and sets up event listeners
  */
 function setup() {
     let canvas = createCanvas(windowWidth , windowHeight);
@@ -138,6 +136,7 @@ function setup() {
     toggleButton = select('#toggle-button');
     controlsPanel = select('#controls');
     toggleButton.mousePressed(toggleControlsPanel);
+    toggleButton.html('Open Settings Panel'); // Set button text
 
     background(255);
     angleMode(DEGREES);
@@ -146,9 +145,11 @@ function setup() {
     endDatePicker = select('#endDatePicker');
     applyDateRangeButton = select('#applyDateRangeButton');
     applyDateRangeButton.mousePressed(generateAllDatesInPeriod);
+    applyDateRangeButton.html('Apply Date Range'); // Set button text
     childBirthDatePicker = select('#childBirthDatePicker');
     childBirthDatePicker.input(generateAllDatesInPeriod);
-  
+    childBirthDatePicker.attribute('title', 'Childbirth Date');
+
     if (minDateFromData && maxDateFromData) {
       startDatePicker.value(minDateFromData);
       endDatePicker.value(maxDateFromData);
@@ -162,7 +163,7 @@ function setup() {
     rowGapValue = select('#rowGapValue');
     rowGapSlider.input(updateVisualization);
     
-    // スライダーの参照を追加
+    // Add slider references
     sleepLineWeightSlider = select('#sleepLineWeightSlider');
     sleepLineWeightValue = select('#sleepLineWeightValue');
     sleepLineWeightSlider.input(updateVisualization);
@@ -179,7 +180,7 @@ function setup() {
     sleepColorPicker2.input(updateVisualization);
     sleepColorAlphaSlider2.input(updateVisualization);
 
-    // 新しいカラーピッカーのUI要素を紐づける
+    // Link new color picker UI elements
     timeAxisColorPicker = select('#timeAxisColorPicker');
     timeAxisColorPicker.input(updateVisualization);
 
@@ -192,14 +193,14 @@ function setup() {
     nightBgColorPicker = select('#nightBgColorPicker');
     nightBgColorPicker.input(updateVisualization);
 
-    // 追加: 一人目の記録なし日背景色のUI要素を紐づけ
+    // Added: Link UI elements for the first person's no-record-day background color
     noRecordDayBgColorPicker1 = select('#noRecordDayBgColorPicker1');
     noRecordDayBgAlphaSlider1 = select('#noRecordDayBgAlphaSlider1');
     noRecordDayBgAlphaValue1 = select('#noRecordDayBgAlphaValue1');
     noRecordDayBgColorPicker1.input(updateVisualization);
     noRecordDayBgAlphaSlider1.input(updateVisualization);
 
-    // 追加: 二人目の記録なし日背景色のUI要素を紐づけ
+    // Added: Link UI elements for the second person's no-record-day background color
     noRecordDayBgColorPicker2 = select('#noRecordDayBgColorPicker2');
     noRecordDayBgAlphaSlider2 = select('#noRecordDayBgAlphaSlider2');
     noRecordDayBgAlphaValue2 = select('#noRecordDayBgAlphaValue2');
@@ -226,14 +227,14 @@ function setup() {
 }
 
 /**
- * 指定された開始日から終了日までの全ての日付を生成し、allDatesInPeriodを更新する関数
+ * A function that generates all dates from the specified start date to end date and updates allDatesInPeriod
  */
 function generateAllDatesInPeriod() {
     const startDateStr = startDatePicker.value();
     const endDateStr = endDatePicker.value();
 
     if (!startDateStr || !endDateStr) {
-        console.warn("開始日と終了日を指定してください。");
+        console.warn("Please specify a start and end date.");
         allDatesInPeriod = [];
         updateVisualization();
         return;
@@ -243,7 +244,7 @@ function generateAllDatesInPeriod() {
     const endDate = new Date(endDateStr);
 
     if (startDate > endDate) {
-        console.warn("開始日は終了日より前である必要があります。");
+        console.warn("Start date must be before the end date.");
         allDatesInPeriod = [];
         updateVisualization();
         return;
@@ -257,13 +258,13 @@ function generateAllDatesInPeriod() {
     }
 
     if (allDatesInPeriod.length === 0) {
-        console.warn("指定された期間内に日付が見つかりませんでした。");
+        console.warn("No dates found within the specified period.");
         createCanvas(windowWidth - select('#controls').width, windowHeight).parent(select('body'));
         background(255);
         textSize(20);
         textAlign(CENTER, CENTER);
         fill(0);
-        text("指定された期間内に日付が見つかりませんでした。", width / 2, height / 2);
+        text("No dates found within the specified period.", width / 2, height / 2);
         noLoop();
         return;
     }
@@ -274,7 +275,7 @@ function generateAllDatesInPeriod() {
 
 
 /**
- * 可視化の更新関数: UIコントロールの値に基づいて描画設定を更新し、再描画する
+ * Update visualization function: Updates drawing settings based on UI control values and redraws
  */
 function updateVisualization() {
     ROW_HEIGHT = parseInt(rowHeightSlider.value());
@@ -304,7 +305,7 @@ function updateVisualization() {
     DAY_BG_COLOR = color(unhex(dayBgColorPicker.value().substring(1, 3)), unhex(dayBgColorPicker.value().substring(3, 5)), unhex(dayBgColorPicker.value().substring(5, 7)));
     NIGHT_BG_COLOR = color(unhex(nightBgColorPicker.value().substring(1, 3)), unhex(nightBgColorPicker.value().substring(3, 5)), unhex(nightBgColorPicker.value().substring(5, 7)));
   
-    // 追加: 一人目の色の設定
+    // Added: Link UI elements for the first person's no-record-day background color
     const noRecordDayBgR1 = unhex(noRecordDayBgColorPicker1.value().substring(1, 3));
     const noRecordDayBgG1 = unhex(noRecordDayBgColorPicker1.value().substring(3, 5));
     const noRecordDayBgB1 = unhex(noRecordDayBgColorPicker1.value().substring(5, 7));
@@ -312,7 +313,7 @@ function updateVisualization() {
     NO_RECORD_DAY_BG_COLOR1 = color(noRecordDayBgR1, noRecordDayBgG1, noRecordDayBgB1, noRecordDayBgA1);
     noRecordDayBgAlphaValue1.html(noRecordDayBgA1);
 
-    // 追加: 二人目の色の設定
+    // Added: Link UI elements for the second person's no-record-day background color
     const noRecordDayBgR2 = unhex(noRecordDayBgColorPicker2.value().substring(1, 3));
     const noRecordDayBgG2 = unhex(noRecordDayBgColorPicker2.value().substring(3, 5));
     const noRecordDayBgB2 = unhex(noRecordDayBgColorPicker2.value().substring(5, 7));
@@ -345,19 +346,19 @@ function updateVisualization() {
 }
 
 /**
- * メイン描画ループ: redraw()が呼び出された時のみ実行される
+ * Main drawing loop: Runs only when redraw() is called
  */
 function draw() {
-    background(CANVAS_BG_COLOR); // キャンバス全体の背景色を設定
+    background(CANVAS_BG_COLOR); // Set the overall canvas background color
     drawBarGraph();
 }
 
 /**
- * 各日の睡眠・起床サイクルを解析し、その日の最大睡眠時間を分単位で計算します。
- * 7:00始まりの24時間周期でデータを集計します。
+ * Analyzes each day's sleep-wake cycle and calculates the maximum sleep time in minutes for that day.
+ * The data is aggregated in a 24-hour cycle starting at 7:00.
  */
 function prepareMaxSleepForDrawing() {
-    maxSleepPerDay = {}; // データをリセット
+    maxSleepPerDay = {}; // Reset data
 
     const childBirthDateStr = childBirthDatePicker.value();
     let childBirthDateMs = 0;
@@ -366,17 +367,17 @@ function prepareMaxSleepForDrawing() {
         childBirthDateMs = new Date(tempDate.getFullYear(), tempDate.getMonth(), tempDate.getDate()).getTime();
     }
     
-    // allDatesInPeriod の各日付 (表示行の基準日) について処理
+    // Process each date in allDatesInPeriod (the base date for the display row)
     for (const dateStr of allDatesInPeriod) {
         const displayDateObj = new Date(dateStr);
-        // 行の表示期間 (ミリ秒): displayDateStr の 7:00 から 翌日 の 7:00
+        // Display period for the row (in milliseconds): from 7:00 of displayDateStr to 7:00 of the next day
         const rowDisplayStartMs = displayDateObj.getTime() + (7 * 60) * 60 * 1000;
         const rowDisplayEndMs = rowDisplayStartMs + 24 * 60 * 60 * 1000;
 
         let maxSleep1 = 0;
         let maxSleep2 = 0;
         
-        // Person 1 の睡眠時間を集計
+        // Aggregate sleep time for Person 1
         for (const sleepDate in sleepData1) {
             if (sleepData1[sleepDate]) {
                 sleepData1[sleepDate].forEach(cycle => {
@@ -393,7 +394,7 @@ function prepareMaxSleepForDrawing() {
             }
         }
         
-        // Person 2 の睡眠時間を集計
+        // Aggregate sleep time for Person 2
         for (const sleepDate in sleepData2) {
             const sleepStartDateMs = new Date(sleepDate).getTime();
             if (childBirthDateMs > 0 && sleepStartDateMs < childBirthDateMs) {
@@ -423,27 +424,27 @@ function prepareMaxSleepForDrawing() {
 }
 
 /**
- * 棒グラフの描画
+ * Draws the bar graph
  */
 function drawBarGraph() {
     const totalDays = allDatesInPeriod.length;
 
-    // 縦軸と補助線の描画
+    // Draw the vertical axis and guide lines
     drawAxesAndGuidelines();
     
-    // 各日付の棒グラフを描画
+    // Draw the bar graph for each day
     for (let i = 0; i < totalDays; i++) {
         const dateStr = allDatesInPeriod[i];
         const data = maxSleepPerDay[dateStr];
         const yBase = MARGIN_TOP + i * (ROW_HEIGHT + ROW_GAP);
         
-        // 記録なし日の網掛け
+        // ハッチングで記録がない日を描画
         drawNoRecordPattern(dateStr, yBase);
         
-        // 日付とイベントテキストの描画
+        // 日付とイベントテキストを描画
         drawDateAndEvents(dateStr, yBase);
         
-        // 棒グラフの描画
+        // バーグラフを描画
         if (data) {
             drawBars(data, yBase);
         }
@@ -451,12 +452,12 @@ function drawBarGraph() {
 }
 
 /**
- * 棒グラフ本体を描画するヘルパー関数
+ * A helper function to draw the bar graph itself
  */
 function drawBars(data, yBase) {
     const vizWidth = width - MARGIN_LEFT - EVENT_TEXT_WIDTH - MARGIN_RIGHT;
 
-    // Person 1の棒グラフを描画
+    // Draw the bar for Person 1
     if (data.person1 > 0) {
         const barLength1 = map(data.person1, 0, MAX_SLEEP_MINUTES, 0, vizWidth);
         const yCenter = yBase + (ROW_HEIGHT / 2);
@@ -465,7 +466,7 @@ function drawBars(data, yBase) {
         line(MARGIN_LEFT, yCenter, MARGIN_LEFT + barLength1, yCenter);
     }
 
-    // Person 2の棒グラフを描画
+    // Draw the bar for Person 2
     if (data.person2 > 0) {
         const barLength2 = map(data.person2, 0, MAX_SLEEP_MINUTES, 0, vizWidth);
         const yCenter = yBase + (ROW_HEIGHT / 2);
@@ -476,12 +477,12 @@ function drawBars(data, yBase) {
 }
 
 /**
- * 日付とイベントテキストを描画するヘルパー関数
+ * A helper function to draw the date and event text
  */
 function drawDateAndEvents(dateStr, yBase) {
     const visualizationRightX = width - EVENT_TEXT_WIDTH - MARGIN_RIGHT;
     
-    // 日付とイベントテキストの描画
+    // 日付とイベントテキストを描画
     noStroke();
     fill(TEXT_COLOR);
     textSize(12);
@@ -494,29 +495,43 @@ function drawDateAndEvents(dateStr, yBase) {
 
     let displayDateText = '';
     
-    if (childBirthDate && currentDate.getTime() < childBirthDate.getTime()) {
-        // 妊娠月数
+    // Check if it's the childbirth date
+    if (childBirthDate && currentDate.toDateString() === childBirthDate.toDateString()) {
+      displayDateText = `Birth Date`;
+    } else if (childBirthDate && currentDate.getTime() < childBirthDate.getTime()) {
+        // 妊娠期間中の表示
         const daysPregnant = Math.floor((currentDate.getTime() - pregnancyStartDate.getTime()) / oneDay);
         const months = Math.floor(daysPregnant / 30.44);
-        const days = Math.floor(daysPregnant % 30.44);
-        displayDateText = `妊娠${months}ヶ月${days}日`;
-    } else if (childBirthDate && currentDate.getTime() === childBirthDate.getTime()) {
-        // 出産日
-        displayDateText = '出産日';
+        const days = daysPregnant % 30.44; 
+        
+        // Display pregnancy months only on the first day of that month
+        if (daysPregnant >= 0 && daysPregnant < 1) {
+            displayDateText = `0 mo.`;
+        } else if (Math.abs(days) < 1) {
+            displayDateText = `${months} mo.`;
+        } else {
+            // displayDateText = `${currentDate.getMonth() + 1}月${currentDate.getDate()}日`;
+        }
     } else if (childBirthDate && currentDate.getTime() > childBirthDate.getTime()) {
-        // 月齢
+        // 産後の期間の表示
         const daysSinceBirth = Math.floor((currentDate.getTime() - childBirthDate.getTime()) / oneDay);
         const months = Math.floor(daysSinceBirth / 30.44);
-        const days = Math.floor(daysSinceBirth % 30.44);
-        displayDateText = `${months}ヶ月${days}日`;
+        const days = daysSinceBirth % 30.44;
+
+        // Display postpartum age in months only on the first day of that month
+        if (Math.abs(days) < 1) {
+            displayDateText = `${months} mo. old`;
+        } else {
+            // displayDateText = `${currentDate.getMonth() + 1}月${currentDate.getDate()}日`;
+        }
     } else {
-        // 出産日が未設定の場合
-        displayDateText = dateStr.substring(5);
+        // If childbirth date is not set
+        displayDateText = `${currentDate.getMonth() + 1}/${currentDate.getDate()}`;
     }
     
     text(displayDateText, MARGIN_LEFT - 10, yBase + ROW_HEIGHT / 2);
 
-    // イベントテキストの描画
+    // Draw event text
     if (eventData && eventData[dateStr]) {
         noStroke();
         fill(TEXT_COLOR);
@@ -530,8 +545,9 @@ function drawDateAndEvents(dateStr, yBase) {
     }
 }
 
+
 /**
- * 記録なし日の網掛けを描画するヘルパー関数
+ * A helper function to draw the hatching pattern for days with no records
  */
 function drawNoRecordPattern(dateStr, yBase) {
     const vizWidth = width - MARGIN_LEFT - EVENT_TEXT_WIDTH - MARGIN_RIGHT;
@@ -546,7 +562,7 @@ function drawNoRecordPattern(dateStr, yBase) {
     const lineSpacing = 4;
     const subRowHeight = ROW_HEIGHT / 2;
 
-    // Person 1 (母) の網掛け
+    // Hatching for Person 1 (Mother)
     if (!hasDataEntry1) {
         const rectX = MARGIN_LEFT;
         const rectY = yBase;
@@ -558,7 +574,7 @@ function drawNoRecordPattern(dateStr, yBase) {
     }
 
     stroke(NO_RECORD_DAY_BG_COLOR2);
-    // Person 2 (子供) の網掛けは、出産日以降で記録がない場合にのみ表示
+    // Hatching for Person 2 (Child) is only displayed if there is no record after the childbirth date
     if (!hasDataEntry2 && (childBirthDateMs !== 0 && currentDisplayDateMs >= childBirthDateMs)) {
         const rectX = MARGIN_LEFT;
         const rectY = yBase + subRowHeight;
@@ -572,19 +588,19 @@ function drawNoRecordPattern(dateStr, yBase) {
 }
 
 /**
- * 軸と補助線を描画するヘルパー関数
+ * A helper function to draw the axis and guide lines
  */
 function drawAxesAndGuidelines() {
     const visualizationRightX = width - EVENT_TEXT_WIDTH - MARGIN_RIGHT;
     const vizWidth = visualizationRightX - MARGIN_LEFT;
 
-    // 軸
+    // Axis
     stroke(TIME_AXIS_COLOR);
     strokeWeight(1);
     line(MARGIN_LEFT, MARGIN_TOP, MARGIN_LEFT, height - MARGIN_BOTTOM);
     line(visualizationRightX, MARGIN_TOP, visualizationRightX, height - MARGIN_BOTTOM);
 
-    // 軸テキスト
+    // Axis text
     
     fill(TEXT_COLOR);
     textSize(12);
@@ -592,7 +608,7 @@ function drawAxesAndGuidelines() {
     text('0h', MARGIN_LEFT, MARGIN_TOP - TEXT_OFFSET_Y * 3);
     text('24h', visualizationRightX, MARGIN_TOP - TEXT_OFFSET_Y * 3);
 
-    // 12時間と6時間、18時間の補助線とテキスト
+    // 12h, 6h, and 18h guide lines and text
     stroke(GUIDE_LINE_COLOR);
     strokeWeight(GUIDE_LINE_WEIGHT);
     const x12h = map(12 * 60, 0, MAX_SLEEP_MINUTES, MARGIN_LEFT, visualizationRightX);
@@ -613,26 +629,26 @@ function drawAxesAndGuidelines() {
 
 
 /**
- * 特定の人のデータにその日付のエントリが存在するかどうかをチェックします。
+ * Checks if a data entry exists for a specific person on that date.
  */
 function hasDataEntryForPerson(data, date) {
     return data[date] !== undefined && data[date] !== null && data[date].length > 0;
 }
 
 /**
- * コントロールパネルの開閉を切り替える関数
+ * A function to toggle the controls panel open and closed
  */
 function toggleControlsPanel() {
     controlsPanel.toggleClass('open');
     if (controlsPanel.hasClass('open')) {
-        toggleButton.html('設定パネルを閉じる');
+        toggleButton.html('Close Settings Panel');
     } else {
-        toggleButton.html('設定パネルを開く');
+        toggleButton.html('Open Settings Panel');
     }
 }
 
 /**
- * キャンバスのサイズをコンテンツに合わせて調整するヘルパー関数
+ * A helper function to adjust the canvas size to fit the content
  */
 function resizeCanvasBasedOnContent() {
     const requiredHeightForContent = allDatesInPeriod.length * (ROW_HEIGHT + ROW_GAP) - 
@@ -647,7 +663,7 @@ function resizeCanvasBasedOnContent() {
 
 
 /**
- * ブラウザウィンドウがリサイズされたときに呼び出されます。
+ * Called when the browser window is resized.
  */
 function windowResized() {
     resizeCanvasBasedOnContent();
