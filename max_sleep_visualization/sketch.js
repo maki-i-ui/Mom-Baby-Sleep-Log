@@ -67,6 +67,9 @@ const MAX_SLEEP_MINUTES = 24 * 60;
 // 事前計算された描画データを格納するグローバル変数
 let maxSleepPerDay = {};
 
+// 妊娠0日目の日付 (YYYY-MM-DD 形式)
+const PREGNANCY_START_DATE = '2024-05-11'; 
+
 /**
  * 事前ロード関数: JSONデータを読み込む
  */
@@ -485,15 +488,41 @@ function drawDateAndEvents(dateStr, yBase) {
         if (skipInterval === 0) skipInterval = 1;
     }
 
-    // 日付テキスト
-    if (allDatesInPeriod.indexOf(dateStr) % skipInterval === 0 || allDatesInPeriod.length === 1) {
-        noStroke();
-        fill(TEXT_COLOR);
-        textSize(12);
-        textAlign(RIGHT, CENTER);
-        text(dateStr.substring(5), MARGIN_LEFT - 10, yBase + ROW_HEIGHT / 2);
+    // 妊娠・月齢テキスト
+    noStroke();
+    fill(TEXT_COLOR);
+    textSize(12);
+    textAlign(RIGHT, CENTER);
+
+    const pregnancyStartDate = new Date(PREGNANCY_START_DATE);
+    const currentDate = new Date(dateStr);
+    const childBirthDate = childBirthDatePicker.value() ? new Date(childBirthDatePicker.value()) : null;
+
+    // 日付表示テキストの決定
+    let displayDateText = '';
+    const oneDay = 1000 * 60 * 60 * 24;
+
+    if (childBirthDate && currentDate.getTime() === childBirthDate.getTime()) {
+        displayDateText = '出産日';
+    } else if (childBirthDate && currentDate > childBirthDate) {
+        // 産後
+        const daysSinceBirth = Math.floor((currentDate.getTime() - childBirthDate.getTime()) / oneDay);
+        const months = Math.floor(daysSinceBirth / 30.44); // 平均月日数で計算
+        const days = Math.floor(daysSinceBirth % 30.44);
+        displayDateText = `${months}ヶ月${days}日`;
+    } else {
+        // 妊娠中
+        const daysPregnant = Math.floor((currentDate.getTime() - pregnancyStartDate.getTime()) / oneDay);
+        const weeks = Math.floor(daysPregnant / 7);
+        const days = daysPregnant % 7;
+        displayDateText = `${weeks}週${days}日`;
     }
 
+    // 日付テキスト
+    if (allDatesInPeriod.indexOf(dateStr) % skipInterval === 0 || allDatesInPeriod.length === 1) {
+        text(displayDateText, MARGIN_LEFT - 10, yBase + ROW_HEIGHT / 2);
+    }
+    
     // イベントテキストの描画
     if (eventData && eventData[dateStr]) {
         noStroke();
@@ -536,8 +565,8 @@ function drawNoRecordPattern(dateStr, yBase) {
     }
 
     stroke(NO_RECORD_DAY_BG_COLOR2);
-    // Person 2 (子供) の網掛け
-    if (!hasDataEntry2 && (childBirthDateMs === 0 || currentDisplayDateMs >= childBirthDateMs)) {
+    // Person 2 (子供) の網掛けは、出産日以降で記録がない場合にのみ表示
+    if (!hasDataEntry2 && (childBirthDateMs !== 0 && currentDisplayDateMs >= childBirthDateMs)) {
         const rectX = MARGIN_LEFT;
         const rectY = yBase + subRowHeight;
         const rectW = vizWidth;
