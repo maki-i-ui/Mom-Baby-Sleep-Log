@@ -480,49 +480,42 @@ function drawBars(data, yBase) {
  */
 function drawDateAndEvents(dateStr, yBase) {
     const visualizationRightX = width - EVENT_TEXT_WIDTH - MARGIN_RIGHT;
-    const requiredVerticalSpace = 80; 
-    const totalRowHeightPerDay = ROW_HEIGHT + ROW_GAP;
-    let skipInterval = 1;
-    if (totalRowHeightPerDay < requiredVerticalSpace) {
-        skipInterval = ceil(requiredVerticalSpace / totalRowHeightPerDay);
-        if (skipInterval === 0) skipInterval = 1;
-    }
-
-    // 妊娠・月齢テキスト
+    
+    // 日付とイベントテキストの描画
     noStroke();
     fill(TEXT_COLOR);
     textSize(12);
     textAlign(RIGHT, CENTER);
 
+    const oneDay = 1000 * 60 * 60 * 24;
     const pregnancyStartDate = new Date(PREGNANCY_START_DATE);
     const currentDate = new Date(dateStr);
     const childBirthDate = childBirthDatePicker.value() ? new Date(childBirthDatePicker.value()) : null;
 
-    // 日付表示テキストの決定
     let displayDateText = '';
-    const oneDay = 1000 * 60 * 60 * 24;
-
-    if (childBirthDate && currentDate.getTime() === childBirthDate.getTime()) {
+    
+    if (childBirthDate && currentDate.getTime() < childBirthDate.getTime()) {
+        // 妊娠月数
+        const daysPregnant = Math.floor((currentDate.getTime() - pregnancyStartDate.getTime()) / oneDay);
+        const months = Math.floor(daysPregnant / 30.44);
+        const days = Math.floor(daysPregnant % 30.44);
+        displayDateText = `妊娠${months}ヶ月${days}日`;
+    } else if (childBirthDate && currentDate.getTime() === childBirthDate.getTime()) {
+        // 出産日
         displayDateText = '出産日';
-    } else if (childBirthDate && currentDate > childBirthDate) {
-        // 産後
+    } else if (childBirthDate && currentDate.getTime() > childBirthDate.getTime()) {
+        // 月齢
         const daysSinceBirth = Math.floor((currentDate.getTime() - childBirthDate.getTime()) / oneDay);
-        const months = Math.floor(daysSinceBirth / 30.44); // 平均月日数で計算
+        const months = Math.floor(daysSinceBirth / 30.44);
         const days = Math.floor(daysSinceBirth % 30.44);
         displayDateText = `${months}ヶ月${days}日`;
     } else {
-        // 妊娠中
-        const daysPregnant = Math.floor((currentDate.getTime() - pregnancyStartDate.getTime()) / oneDay);
-        const weeks = Math.floor(daysPregnant / 7);
-        const days = daysPregnant % 7;
-        displayDateText = `${weeks}週${days}日`;
-    }
-
-    // 日付テキスト
-    if (allDatesInPeriod.indexOf(dateStr) % skipInterval === 0 || allDatesInPeriod.length === 1) {
-        text(displayDateText, MARGIN_LEFT - 10, yBase + ROW_HEIGHT / 2);
+        // 出産日が未設定の場合
+        displayDateText = dateStr.substring(5);
     }
     
+    text(displayDateText, MARGIN_LEFT - 10, yBase + ROW_HEIGHT / 2);
+
     // イベントテキストの描画
     if (eventData && eventData[dateStr]) {
         noStroke();
