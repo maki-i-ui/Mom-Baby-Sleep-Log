@@ -68,6 +68,13 @@ let maxSleepPerDay = {};
 // The date of pregnancy day 0 (in YYYY-MM-DD format)
 const PREGNANCY_START_DATE = '2024-05-11'; 
 
+// --- 凡例に関する新しい変数 ---
+let isPerson1Visible = true; // 一人目のデータ表示フラグ
+let isPerson2Visible = true; // 二人目のデータ表示フラグ
+let hoveredLegendItem = null; // ホバー中の凡例アイテム ('person1', 'person2', or null)
+const LEGEND_BOX_SIZE = 15;
+const LEGEND_TEXT_OFFSET = 5;
+
 /**
  * Preload function: Loads JSON data
  */
@@ -227,6 +234,56 @@ function setup() {
 }
 
 /**
+ * マウスがクリックされたときに呼び出されます
+ */
+function mouseClicked() {
+    // 凡例のクリック判定
+    const legendX = MARGIN_LEFT;
+    const legendY = MARGIN_TOP / 2 - LEGEND_BOX_SIZE/2; // Y座標を調整して中央に合わせる
+    
+    // 一人目の凡例をクリック
+    const person1LegendX = legendX;
+    // 凡例のボックスとテキストの両方を検知範囲に含める
+    if (mouseX >= person1LegendX && mouseX <= person1LegendX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth('mom') && mouseY >= legendY && mouseY <= legendY + LEGEND_BOX_SIZE) {
+        isPerson1Visible = !isPerson1Visible;
+        redraw();
+    }
+
+    // 二人目の凡例をクリック
+    const person2LegendX = legendX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth('mom') + 40; // 40は適当な隙間
+    // 凡例のボックスとテキストの両方を検知範囲に含める
+    if (mouseX >= person2LegendX && mouseX <= person2LegendX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth('child') && mouseY >= legendY && mouseY <= legendY + LEGEND_BOX_SIZE) {
+        isPerson2Visible = !isPerson2Visible;
+        redraw();
+    }
+}
+
+
+/**
+ * マウスが動いたときに呼び出されます
+ */
+function mouseMoved() {
+    // 凡例のホバー判定
+    const legendX = MARGIN_LEFT;
+    const legendY = MARGIN_TOP / 2 - LEGEND_BOX_SIZE/2; // Y座標を調整
+    const person1LegendX = legendX;
+    const person2LegendX = legendX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth('mom') + 40;
+
+    let newHoveredItem = null;
+    if (mouseX >= person1LegendX && mouseX <= person1LegendX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth('mom') + 40 && mouseY >= legendY && mouseY <= legendY + LEGEND_BOX_SIZE) {
+        newHoveredItem = 'person1';
+    } else if (mouseX >= person2LegendX && mouseX <= person2LegendX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth('child') + 40 && mouseY >= legendY && mouseY <= legendY + LEGEND_BOX_SIZE) {
+        newHoveredItem = 'person2';
+    }
+
+    // ホバー状態が変化した場合のみ再描画
+    if (newHoveredItem !== hoveredLegendItem) {
+        hoveredLegendItem = newHoveredItem;
+        redraw();
+    }
+}
+
+/**
  * A function that generates all dates from the specified start date to end date and updates allDatesInPeriod
  */
 function generateAllDatesInPeriod() {
@@ -351,6 +408,7 @@ function updateVisualization() {
 function draw() {
     background(CANVAS_BG_COLOR); // Set the overall canvas background color
     drawBarGraph();
+    drawLegend(); // 凡例の描画を呼び出し
 }
 
 /**
@@ -446,31 +504,92 @@ function drawBarGraph() {
         
         // バーグラフを描画
         if (data) {
-            drawBars(data, yBase);
+            drawBars(data, yBase,getDisplayColor('person1', SLEEP_COLOR1),getDisplayColor('person2', SLEEP_COLOR2));
         }
     }
 }
 
 /**
+ * 凡例を描画する関数
+ */
+function drawLegend() {
+    const legendY = MARGIN_TOP / 2 - LEGEND_BOX_SIZE/2; // Y座標を調整して中央に合わせる
+
+    // 凡例の項目
+    const legendItems = [
+        { label: 'mom', personId: 'person1', color: SLEEP_COLOR1, isVisible: isPerson1Visible },
+        { label: 'child', personId: 'person2', color: SLEEP_COLOR2, isVisible: isPerson2Visible }
+    ];
+
+    noStroke();
+    textSize(12);
+    textAlign(LEFT, TOP);
+
+    // X座標の初期位置
+    let currentX = MARGIN_LEFT;
+
+    for (const item of legendItems) {
+        // ホバーによる色の変更を適用
+        let displayColor = getDisplayColor(item.personId, item.color);
+
+        // 非表示の場合は、灰色にして透明度を下げる
+        if (!item.isVisible) {
+            displayColor = color(150, alpha(displayColor) * 0.5); // 灰色に設定
+        }
+
+        fill(displayColor);
+        rect(currentX, legendY, LEGEND_BOX_SIZE, LEGEND_BOX_SIZE);
+
+        // テキストの描画
+        fill(TEXT_COLOR);
+        text(item.label, currentX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET, legendY);
+
+        // 次の凡例のX座標を計算
+        currentX += LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth(item.label) + 40; // 40は適当な隙間
+    }
+}
+
+/**
+ * 表示色を返すヘルパー関数。ホバー状態によって透明度を調整する。
+ */
+function getDisplayColor(personId, originalColor) {
+    // ユーザーの新しいリクエスト: データが非表示の場合は、ホバーによる半透明化を無効にする
+    if (personId === 'person1' && !isPerson1Visible) {
+        return originalColor;
+    }
+    if (personId === 'person2' && !isPerson2Visible) {
+        return originalColor;
+    }
+
+    // ホバー中のアイテムが存在し、それがこのpersonIdと一致しない場合、半透明にする
+    if (hoveredLegendItem !== null && hoveredLegendItem !== personId) {
+        return color(red(originalColor), green(originalColor), blue(originalColor), alpha(originalColor) * 0.2); // 半透明に
+    }
+    
+    // それ以外の場合は元の色を返す
+    return originalColor;
+}
+
+/**
  * A helper function to draw the bar graph itself
  */
-function drawBars(data, yBase) {
+function drawBars(data,yBase , person1Color,person2Color) {
     const vizWidth = width - MARGIN_LEFT - EVENT_TEXT_WIDTH - MARGIN_RIGHT;
 
     // Draw the bar for Person 1
-    if (data.person1 > 0) {
+    if (data.person1 > 0 && isPerson1Visible) {
         const barLength1 = map(data.person1, 0, MAX_SLEEP_MINUTES, 0, vizWidth);
         const yCenter = yBase + (ROW_HEIGHT / 2);
-        stroke(SLEEP_COLOR1);
+        stroke(person1Color);
         strokeWeight(SLEEP_LINE_WEIGHT);
         line(MARGIN_LEFT, yCenter, MARGIN_LEFT + barLength1, yCenter);
     }
 
     // Draw the bar for Person 2
-    if (data.person2 > 0) {
+    if (data.person2 > 0 && isPerson2Visible) {
         const barLength2 = map(data.person2, 0, MAX_SLEEP_MINUTES, 0, vizWidth);
         const yCenter = yBase + (ROW_HEIGHT / 2);
-        stroke(SLEEP_COLOR2);
+        stroke(person2Color);
         strokeWeight(SLEEP_LINE_WEIGHT);
         line(MARGIN_LEFT, yCenter, MARGIN_LEFT + barLength2, yCenter);
     }
