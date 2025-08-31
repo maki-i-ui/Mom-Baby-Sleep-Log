@@ -35,7 +35,7 @@ let SHOW_TIME_TEXT = true;
 // マージン (これらは固定)
 const MARGIN_TOP = 60;
 const MARGIN_BOTTOM = 30;
-const MARGIN_LEFT = 60;
+const MARGIN_LEFT = 100;
 const MARGIN_RIGHT = 60; // 可視化領域とイベントテキスト領域の間のマージン
 const EVENT_TEXT_WIDTH = 300; // イベントテキストの固定幅を定義
 
@@ -73,6 +73,9 @@ const DISPLAY_END_MINUTE_ABSOLUTE = DISPLAY_END_HOUR * 60; // 翌7時の絶対�
 
 // 事前計算された描画データを格納するグローバル変数
 let cyclesToDrawPerDay = {};
+
+// The date of pregnancy day 0 (in YYYY-MM-DD format)
+const PREGNANCY_START_DATE = '2024-05-11'; 
 
 /**
  * 事前ロード関数: JSONデータを読み込む
@@ -552,7 +555,7 @@ function prepareSleepCyclesForDrawing() {
 
         // その行の表示期間 (ミリ秒): displayDateStr の 7:00 から 翌日 の 7:00
         const rowDisplayStartMs = displayDateObj.getTime() + DISPLAY_START_MINUTE_ABSOLUTE * 60 * 1000;
-        const rowDisplayEndMs = displayDateObj.getTime() + DISPLAY_END_MINUTE_ABSOLUTE * 60 * 1000;
+        const rowDisplayEndMs = displayDateObj.getTime() + DISPLAY_END_MINUTE_ABSOLUTE * 60 * 1000; // 翌日7時の絶対ミリ秒
 
         let cyclesForCurrentRowPerson1 = [];
         let cyclesForCurrentRowPerson2 = [];
@@ -606,7 +609,50 @@ function drawDateRows() {
         // 現在描画中の日付の0時0分0秒のミリ秒タイムスタンプを取得
         const currentDisplayDateObj = new Date(currentDisplayDateStr);
         const currentDisplayDateMs = new Date(currentDisplayDateObj.getFullYear(), currentDisplayDateObj.getMonth(), currentDisplayDateObj.getDate()).getTime();
+        
+        // --- 縦軸の表示ロジックを更新 ---
+        const oneDay = 1000 * 60 * 60 * 24;
+        const pregnancyStartDate = new Date(PREGNANCY_START_DATE);
+        const currentDate = new Date(currentDisplayDateStr);
+        const childBirthDate = childBirthDatePicker.value() ? new Date(childBirthDatePicker.value()) : null;
 
+        let displayDateText = '';
+
+        if (childBirthDate && currentDate.toDateString() === childBirthDate.toDateString()) {
+            displayDateText = `Birth Date`;
+        } else if (childBirthDate && currentDate.getTime() < childBirthDate.getTime()) {
+            const daysPregnant = Math.floor((currentDate.getTime() - pregnancyStartDate.getTime()) / oneDay);
+            const months = Math.floor(daysPregnant / 30.44);
+            const days = daysPregnant % 30.44; 
+            
+            if (daysPregnant >= 0 && daysPregnant < 1) {
+                displayDateText = `0 mo.`;
+            } else if (Math.abs(days) < 1) {
+                displayDateText = `${months} mo.`;
+            } else {
+                // displayDateText = `${currentDate.getMonth() + 1}月${currentDate.getDate()}日`;
+            }
+        } else if (childBirthDate && currentDate.getTime() > childBirthDate.getTime()) {
+            const daysSinceBirth = Math.floor((currentDate.getTime() - childBirthDate.getTime()) / oneDay);
+            const months = Math.floor(daysSinceBirth / 30.44);
+            const days = daysSinceBirth % 30.44;
+
+            if (Math.abs(days) < 1) {
+                displayDateText = `${months} mo. old`;
+            } else {
+                // displayDateText = `${currentDate.getMonth() + 1}月${currentDate.getDate()}日`;
+            }
+        } else {
+            displayDateText = `${currentDate.getMonth() + 1}/${currentDate.getDate()}`;
+        }
+
+        noStroke();
+        fill(TEXT_COLOR);
+        textSize(12);
+        textAlign(RIGHT, CENTER);
+
+        text(displayDateText, MARGIN_LEFT - 10, currentYBase + ROW_HEIGHT / 2);
+        
         // --- 各個人の記録なし背景を描画 ---
         // Person 1 (母) の記録なし背景
         const hasDataEntry1ForCurrentDate = hasDataEntryForPerson(sleepData1, currentDisplayDateStr);
@@ -651,15 +697,6 @@ function drawDateRows() {
             }
         }
         
-        // 日付テキスト
-        if (i % skipInterval === 0 || allDatesInPeriod.length === 1) {
-            noStroke();
-            fill(TEXT_COLOR);
-            textSize(12);
-            textAlign(RIGHT, CENTER);
-            text(currentDisplayDateStr.substring(5), MARGIN_LEFT - 10, currentYBase + ROW_HEIGHT / 2);
-        }
-
         // 可視化領域の右端を計算
         // ウィンドウの幅 - イベントテキストの幅 - 右マージン
         const visualizationRightX = width - EVENT_TEXT_WIDTH - MARGIN_RIGHT;
@@ -849,20 +886,19 @@ function drawSleepWakeCycles(cycles, color, yBase, displayDateStr, currentColumn
     }
 }
 /**
- * コントロールパネルの開閉を切り替える関数
+ * A function to toggle the controls panel open and closed
  */
 function toggleControlsPanel() {
     controlsPanel.toggleClass('open');
     if (controlsPanel.hasClass('open')) {
-        toggleButton.html('設定パネルを閉じる');
+        toggleButton.html('Close Settings Panel');
     } else {
-        toggleButton.html('設定パネルを開く');
+        toggleButton.html('Open Settings Panel');
     }
 }
 
 /**
- * キャンバスのサイズをコンテンツに合わせて調整するヘルパー関数
- * この関数を修正して、パネルの状態を考慮するようにします。
+ * A helper function to adjust the canvas size to fit the content
  */
 function resizeCanvasBasedOnContent() {
     const requiredHeightForContent = allDatesInPeriod.length * (ROW_HEIGHT + ROW_GAP) - 
@@ -873,12 +909,11 @@ function resizeCanvasBasedOnContent() {
     const newCanvasWidth = windowWidth;
   
     resizeCanvas(newCanvasWidth, newCanvasHeight);
-  }
-
+}
 
 
 /**
- * ブラウザウィンドウがリサイズされたときに呼び出されます。
+ * Called when the browser window is resized.
  */
 function windowResized() {
     resizeCanvasBasedOnContent();
