@@ -77,6 +77,13 @@ let cyclesToDrawPerDay = {};
 // The date of pregnancy day 0 (in YYYY-MM-DD format)
 const PREGNANCY_START_DATE = '2024-05-11'; 
 
+// --- 凡例に関する新しい変数 ---
+let isPerson1Visible = true; // 一人目のデータ表示フラグ
+let isPerson2Visible = true; // 二人目のデータ表示フラグ
+let hoveredLegendItem = null; // ホバー中の凡例アイテム ('person1', 'person2', or null)
+const LEGEND_BOX_SIZE = 15;
+const LEGEND_TEXT_OFFSET = 5;
+
 /**
  * 事前ロード関数: JSONデータを読み込む
  * loadJSONは非同期なので、読み込み完了後にコールバック関数が呼ばれるようにする
@@ -260,6 +267,53 @@ function setup() {
 }
 
 /**
+ * マウスがクリックされたときに呼び出されます
+ */
+function mouseClicked() {
+    // 凡例のクリック判定
+    const legendX = MARGIN_LEFT;
+    const legendY = MARGIN_TOP / 2;
+    const legendItem1Y = legendY;
+    const legendItem2Y = legendY + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET;
+
+    // 一人目の凡例をクリック
+    if (mouseX >= legendX && mouseX <= legendX + LEGEND_BOX_SIZE && mouseY >= legendItem1Y && mouseY <= legendItem1Y + LEGEND_BOX_SIZE) {
+        isPerson1Visible = !isPerson1Visible;
+        redraw();
+    }
+    // 二人目の凡例をクリック
+    if (mouseX >= legendX && mouseX <= legendX + LEGEND_BOX_SIZE && mouseY >= legendItem2Y && mouseY <= legendItem2Y + LEGEND_BOX_SIZE) {
+        isPerson2Visible = !isPerson2Visible;
+        redraw();
+    }
+}
+
+/**
+ * マウスが動いたときに呼び出されます
+ */
+function mouseMoved() {
+    // 凡例のホバー判定
+    const legendX = MARGIN_LEFT;
+    const legendY = MARGIN_TOP / 2;
+    const legendItem1Y = legendY;
+    const legendItem2Y = legendY + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET;
+
+    let newHoveredItem = null;
+    if (mouseX >= legendX && mouseX <= legendX + LEGEND_BOX_SIZE && mouseY >= legendItem1Y && mouseY <= legendItem1Y + LEGEND_BOX_SIZE) {
+        newHoveredItem = 'person1';
+    } else if (mouseX >= legendX && mouseX <= legendX + LEGEND_BOX_SIZE && mouseY >= legendItem2Y && mouseY <= legendItem2Y + LEGEND_BOX_SIZE) {
+        newHoveredItem = 'person2';
+    }
+
+    // ホバー状態が変化した場合のみ再描画
+    if (newHoveredItem !== hoveredLegendItem) {
+        hoveredLegendItem = newHoveredItem;
+        redraw();
+    }
+}
+
+
+/**
  * 指定された開始日から終了日までの全ての日付を生成し、allDatesInPeriodを更新する関数
  */
 function generateAllDatesInPeriod() {
@@ -398,6 +452,7 @@ function draw() {
   drawDateRows();
   drawTimeAxis();
   drawZeroOClockGuideLine();
+  drawLegend(); // 凡例の描画を呼び出し
 }
 
 /**
@@ -582,7 +637,7 @@ function prepareSleepCyclesForDrawing() {
 }
 
 /**
- * 各日付の背景色（記録なし）と睡眠サイクルを描画する関数
+ * 各日の背景色（記録なし）と睡眠サイクルを描画する関数
  */
 function drawDateRows() {
     const requiredVerticalSpace = 80; 
@@ -645,13 +700,6 @@ function drawDateRows() {
         } else {
             displayDateText = `${currentDate.getMonth() + 1}/${currentDate.getDate()}`;
         }
-
-        noStroke();
-        fill(TEXT_COLOR);
-        textSize(12);
-        textAlign(RIGHT, CENTER);
-
-        text(displayDateText, MARGIN_LEFT - 10, currentYBase + ROW_HEIGHT / 2);
         
         // --- 各個人の記録なし背景を描画 ---
         // Person 1 (母) の記録なし背景
@@ -697,6 +745,14 @@ function drawDateRows() {
             }
         }
         
+        // 日付テキスト
+            noStroke();
+            fill(TEXT_COLOR);
+            textSize(12);
+            textAlign(RIGHT, CENTER);
+            // 変更後の表示テキストを使用
+            text(displayDateText, MARGIN_LEFT - 10, currentYBase + ROW_HEIGHT / 2);
+
         // 可視化領域の右端を計算
         // ウィンドウの幅 - イベントテキストの幅 - 右マージン
         const visualizationRightX = width - EVENT_TEXT_WIDTH - MARGIN_RIGHT;
@@ -728,13 +784,75 @@ function drawDateRows() {
             console.warn(`No pre-calculated sleep data for ${currentDisplayDateStr}. This should not happen if prepareSleepCyclesForDrawing is called correctly.`);
             continue; 
         }
-        
-        drawSleepWakeCycles(dataForThisRow.person1, SLEEP_COLOR1, currentYBase, currentDisplayDateStr, currentYBase, i);
-        // 子供の睡眠サイクルも、出生日以降のみ描画されるように調整済みなので、ここでは単純に描画を呼び出す
-        drawSleepWakeCycles(dataForThisRow.person2, SLEEP_COLOR2, currentYBase, currentDisplayDateStr, currentYBase, i);
+
+        // 凡例の状態に基づいて描画を呼び出す
+        if (isPerson1Visible) {
+            drawSleepWakeCycles(dataForThisRow.person1, getDisplayColor('person1', SLEEP_COLOR1), currentYBase, currentDisplayDateStr, currentYBase, i);
+        }
+        if (isPerson2Visible) {
+            // 子供の睡眠サイクルも、出生日以降のみ描画されるように調整済みなので、ここでは単純に描画を呼び出す
+            drawSleepWakeCycles(dataForThisRow.person2, getDisplayColor('person2', SLEEP_COLOR2), currentYBase + SUB_ROW_HEIGHT, currentDisplayDateStr, currentYBase, i);
+        }
     }
 }
 
+/**
+ * 凡例を描画する関数
+ */
+function drawLegend() {
+    const legendX = MARGIN_LEFT;
+    const legendY = MARGIN_TOP / 2;
+    const legendGap = 30; // 凡例間の隙間
+
+    // 凡例の項目
+    const legendItems = [
+        { label: '本人', personId: 'person1', color: SLEEP_COLOR1, isVisible: isPerson1Visible },
+        { label: '子供', personId: 'person2', color: SLEEP_COLOR2, isVisible: isPerson2Visible }
+    ];
+
+    noStroke();
+    textSize(12);
+    textAlign(LEFT, TOP);
+    let currentY = legendY;
+
+    for (const item of legendItems) {
+        let displayColor = item.color;
+        let currentAlpha = alpha(displayColor);
+
+        // ホバー中のアイテム以外の色を薄くする
+        if (hoveredLegendItem && hoveredLegendItem !== item.personId) {
+            currentAlpha = 50; // 薄い色に設定
+        }
+
+        // 非表示の場合は、灰色にして透明度を下げる
+        if (!item.isVisible) {
+            displayColor = color(150, currentAlpha); // 灰色に設定
+        } else {
+            // 表示されている場合は元の色と透明度を使用
+            displayColor = color(red(item.color), green(item.color), blue(item.color), currentAlpha);
+        }
+
+        fill(displayColor);
+        rect(legendX, currentY, LEGEND_BOX_SIZE, LEGEND_BOX_SIZE);
+
+        // テキストの描画
+        fill(TEXT_COLOR);
+        text(item.label, legendX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET, currentY);
+
+        currentY += LEGEND_BOX_SIZE + legendGap;
+    }
+}
+
+/**
+ * 表示色を返すヘルパー関数。ホバー状態によって透明度を調整する。
+ */
+function getDisplayColor(personId, originalColor) {
+    if (hoveredLegendItem && hoveredLegendItem !== personId) {
+        // ホバー中の凡例以外のデータを薄く表示
+        return color(red(originalColor), green(originalColor), blue(originalColor), alpha(originalColor) * 0.2);
+    }
+    return originalColor;
+}
 
 function drawTimeAxis() {
     stroke(TIME_AXIS_COLOR);
