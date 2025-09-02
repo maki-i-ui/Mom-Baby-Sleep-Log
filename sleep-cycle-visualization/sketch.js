@@ -652,7 +652,6 @@ function drawDateRows() {
         if (skipInterval === 0) skipInterval = 1;
     }
 
-    // 子供の出生日を取得し、Dateオブジェクトに変換 (0時0分0秒のミリ秒タイムスタンプ)
     const childBirthDateStr = childBirthDatePicker.value();
     let childBirthDateMs = 0;
     if (childBirthDateStr) {
@@ -660,16 +659,13 @@ function drawDateRows() {
         childBirthDateMs = new Date(tempDate.getFullYear(), tempDate.getMonth(), tempDate.getDate()).getTime();
     }
 
-
     for (let i = 0; i < allDatesInPeriod.length; i++) {
         const currentDisplayDateStr = allDatesInPeriod[i];
         const currentYBase = MARGIN_TOP + (i * (ROW_HEIGHT + ROW_GAP));
         
-        // 現在描画中の日付の0時0分0秒のミリ秒タイムスタンプを取得
         const currentDisplayDateObj = new Date(currentDisplayDateStr);
         const currentDisplayDateMs = new Date(currentDisplayDateObj.getFullYear(), currentDisplayDateObj.getMonth(), currentDisplayDateObj.getDate()).getTime();
         
-        // --- 縦軸の表示ロジックを更新 ---
         const oneDay = 1000 * 60 * 60 * 24;
         const pregnancyStartDate = new Date(PREGNANCY_START_DATE);
         const currentDate = new Date(currentDisplayDateStr);
@@ -688,8 +684,6 @@ function drawDateRows() {
                 displayDateText = `0 mo.`;
             } else if (Math.abs(days) < 1) {
                 displayDateText = `${months} mo.`;
-            } else {
-                // displayDateText = `${currentDate.getMonth() + 1}/${currentDate.getDate()}`;
             }
         } else if (childBirthDate && currentDate.getTime() > childBirthDate.getTime()) {
             const daysSinceBirth = Math.floor((currentDate.getTime() - childBirthDate.getTime()) / oneDay);
@@ -698,8 +692,6 @@ function drawDateRows() {
 
             if (Math.abs(days) < 1) {
                 displayDateText = `${months} mo. old`;
-            } else {
-                // displayDateText = `${currentDate.getMonth() + 1}/${currentDate.getDate()}`;
             }
         } else {
             displayDateText = `${currentDate.getMonth() + 1}/${currentDate.getDate()}`;
@@ -708,19 +700,16 @@ function drawDateRows() {
         // --- 各個人の記録なし背景を描画 ---
         // Person 1 (母) の記録なし背景
         const hasDataEntry1ForCurrentDate = hasDataEntryForPerson(sleepData1, currentDisplayDateStr);
-        const yForPerson1 = currentYBase + (0 * SUB_ROW_HEIGHT); 
         if (!hasDataEntry1ForCurrentDate) { 
             noFill();
             stroke(NO_RECORD_DAY_BG_COLOR1); 
             strokeWeight(1);
             
             const rectX = MARGIN_LEFT;
-            const rectY = yForPerson1;
+            const rectY = currentYBase; // Person 1 のハッチングも同じY座標
             const rectW = width - MARGIN_LEFT - EVENT_TEXT_WIDTH - MARGIN_RIGHT;
-            const rectH = SUB_ROW_HEIGHT;
-
-            // 45度斜線 (Person 1)
-            const lineSpacing = 4; // 線の間隔 (これが "n" に相当)
+            const rectH = ROW_HEIGHT; // ハッチングの高さをROW_HEIGHT全体に
+            const lineSpacing = 4;
             for (let x = rectX - rectH; x < rectX + rectW + rectH; x += lineSpacing) {
                 line(x, rectY, x + rectH, rectY + rectH);
             }
@@ -728,58 +717,41 @@ function drawDateRows() {
 
         // Person 2 (子供) の記録なし背景
         const hasDataEntry2ForCurrentDate = hasDataEntryForPerson(sleepData2, currentDisplayDateStr);
-        const yForPerson2 = currentYBase + (1 * SUB_ROW_HEIGHT); 
-        
         if (!hasDataEntry2ForCurrentDate && (childBirthDateMs === 0 || currentDisplayDateMs >= childBirthDateMs)) { 
             noFill();
             stroke(NO_RECORD_DAY_BG_COLOR2); 
             strokeWeight(1);
             
             const rectX = MARGIN_LEFT;
-            const rectY = yForPerson2;
+            const rectY = currentYBase; // Person 2 のハッチングも同じY座標
             const rectW = width - MARGIN_LEFT - EVENT_TEXT_WIDTH - MARGIN_RIGHT;
-            const rectH = SUB_ROW_HEIGHT;
-
-            // 45度斜線 (Person 2)
+            const rectH = ROW_HEIGHT; // ハッチングの高さをROW_HEIGHT全体に
             const lineSpacing = 4;
-            const offset = lineSpacing / 2; // 1/2ずらす
+            const offset = lineSpacing / 2;
 
             for (let x = rectX - rectH - offset; x < rectX + rectW + rectH; x += lineSpacing) {
                 line(x, rectY, x + rectH, rectY + rectH);
             }
         }
         
-        // 日付テキスト
         noStroke();
         fill(TEXT_COLOR);
         textSize(12);
         textAlign(RIGHT, CENTER);
-        // 変更後の表示テキストを使用
         text(displayDateText, MARGIN_LEFT - 10, currentYBase + ROW_HEIGHT / 2);
 
-        // 可視化領域の右端を計算
-        // ウィンドウの幅 - イベントテキストの幅 - 右マージン
         const visualizationRightX = width - EVENT_TEXT_WIDTH - MARGIN_RIGHT;
 
-        // イベントテキストの描画
         if (eventData && eventData[currentDisplayDateStr]) {
             noStroke();
             fill(TEXT_COLOR);
             textSize(12);
             textAlign(LEFT, CENTER);
-            
-            // イベントテキストの描画開始X座標は、可視化領域の右端から
             const eventTextX = visualizationRightX ;
             const eventTextY = currentYBase + ROW_HEIGHT / 2;
-            
-            // ◀︎記号の描画
             text(EVENT_TEXT_PREFIX, eventTextX, eventTextY);
-
-            // メインのテキストの描画
-            // ◀︎記号の幅を考慮してテキストの開始位置をずらし、
-            // イベントテキストの固定幅(EVENT_TEXT_WIDTH)の領域に収まるようにする
             const eventMainTextX = eventTextX + textWidth(EVENT_TEXT_PREFIX);
-            text(eventData[currentDisplayDateStr], eventMainTextX, eventTextY, EVENT_TEXT_WIDTH - 20); // 幅を指定
+            text(eventData[currentDisplayDateStr], eventMainTextX, eventTextY, EVENT_TEXT_WIDTH - 20);
         }
         
         // --- 睡眠データの描画呼び出し ---
@@ -791,11 +763,12 @@ function drawDateRows() {
 
         // 凡例の状態に基づいて描画を呼び出す
         if (isPerson1Visible) {
+            // Y座標を統一
             drawSleepWakeCycles(dataForThisRow.person1, getDisplayColor('person1', SLEEP_COLOR1), currentYBase, currentDisplayDateStr, currentYBase, i);
         }
         if (isPerson2Visible) {
-            // 子供の睡眠サイクルも、出生日以降のみ描画されるように調整済みなので、ここでは単純に描画を呼び出す
-            drawSleepWakeCycles(dataForThisRow.person2, getDisplayColor('person2', SLEEP_COLOR2), currentYBase + SUB_ROW_HEIGHT, currentDisplayDateStr, currentYBase, i);
+            // Y座標を統一
+            drawSleepWakeCycles(dataForThisRow.person2, getDisplayColor('person2', SLEEP_COLOR2), currentYBase, currentDisplayDateStr, currentYBase, i);
         }
     }
 }
