@@ -72,7 +72,7 @@ export default class TimelineRenderer {
   
         // 睡眠サイクル描画
         const dataForRow = cyclesToDrawPerDay[dateStr] || { person1: [], person2: [] };
-
+        console.log(dateStr, "person1:", dataForRow.person1, "person2:", dataForRow.person2);
         if (settings.isPerson1Visible) {
           const person1Cycles = Array.isArray(dataForRow.person1)
             ? dataForRow.person1

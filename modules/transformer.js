@@ -1,7 +1,4 @@
 // modules/transformer.js
-// 目的: 元コードの prepareSleepCyclesForDrawing を再現して、
-//       allDatesInPeriod の各日付に対して person1/person2 の
-//       描画用サイクル配列を返す。
 
 export function generateAllDatesInPeriod(startDateStr, endDateStr) {
     if (!startDateStr || !endDateStr) return [];
@@ -22,18 +19,15 @@ export function generateAllDatesInPeriod(startDateStr, endDateStr) {
   }
   
   /**
-   * prepareSleepCyclesForDrawing の復刻版（機能は元コードに合わせる）
-   * 入力: { sleepData1, sleepData2, allDatesInPeriod, childBirthDateStr }
-   * 出力: { 'YYYY-MM-DD': { person1: [...], person2: [...] } }
-   * 各 cycle は { person, sleep, wake, sleepStartMs, wakeEndMs } の形
+   * 日をまたぐ場合に分割して描画するための prepareSleepCyclesForDrawing
    */
   export function prepareSleepCyclesForDrawing({ sleepData1 = {}, sleepData2 = {}, allDatesInPeriod = [], childBirthDateStr = '' }) {
-    const DISPLAY_START_MINUTE_ABSOLUTE = 7 * 60;
-    const DISPLAY_END_MINUTE_ABSOLUTE = (7 + 24) * 60;
+    const DISPLAY_START_MINUTE_ABSOLUTE = 0 * 60;       // 7:00
+    const DISPLAY_END_MINUTE_ABSOLUTE = (0 + 24) * 60;  // 翌日7:00
   
     let allSleepCyclesWithAbsoluteTime = [];
   
-    // child birth ms
+    // 子の誕生日フィルタ用
     let childBirthDateMs = 0;
     if (childBirthDateStr) {
       const t = new Date(childBirthDateStr);
@@ -42,12 +36,32 @@ export function generateAllDatesInPeriod(startDateStr, endDateStr) {
   
     // helper to parse "HH:MM" with base date (dateKey)
     const toMs = (dateKey, hhmm) => {
-      const [hh, mm] = hhmm.split(':').map(s => parseInt(s,10));
+      const [hh, mm] = hhmm.split(':').map(s => parseInt(s, 10));
       const base = new Date(dateKey);
       return base.getTime() + (hh * 60 + mm) * 60 * 1000;
     };
   
-    // iterate person1
+    // helper to split跨ぎ
+    const splitIfCrosses = (person, sleep, wake, sleepStartMs, wakeEndMs) => {
+      const parts = [];
+      let curStart = sleepStartMs;
+      while (curStart < wakeEndMs) {
+        const curDate = new Date(curStart);
+        const next7am = new Date(curDate.getFullYear(), curDate.getMonth(), curDate.getDate(), 7, 0, 0, 0).getTime();
+        const curEnd = Math.min(wakeEndMs, next7am + 24 * 60 * 60 * 1000); // 翌日の7:00
+        parts.push({
+          person,
+          sleep,
+          wake,
+          sleepStartMs: curStart,
+          wakeEndMs: curEnd
+        });
+        curStart = curEnd;
+      }
+      return parts;
+    };
+  
+    // person1
     for (const dateKey in sleepData1) {
       if (!hasDataEntryForPerson(sleepData1, dateKey)) continue;
       for (const cycle of sleepData1[dateKey]) {
@@ -55,48 +69,34 @@ export function generateAllDatesInPeriod(startDateStr, endDateStr) {
         try {
           let sleepStartMs = toMs(dateKey, cycle.sleep);
           let wakeEndMs = toMs(dateKey, cycle.wake);
-          if (wakeEndMs <= sleepStartMs) wakeEndMs += 24*60*60*1000;
-          allSleepCyclesWithAbsoluteTime.push({
-            person: 1,
-            sleep: cycle.sleep,
-            wake: cycle.wake,
-            sleepStartMs,
-            wakeEndMs
-          });
-        } catch(e){ console.warn("parse error", e); }
+          if (wakeEndMs <= sleepStartMs) wakeEndMs += 24 * 60 * 60 * 1000;
+  
+          const splitCycles = splitIfCrosses(1, cycle.sleep, cycle.wake, sleepStartMs, wakeEndMs);
+          allSleepCyclesWithAbsoluteTime.push(...splitCycles);
+        } catch (e) { console.warn("parse error", e); }
       }
     }
   
-    // iterate person2 (child) with birth filter
+    // person2
     for (const dateKey in sleepData2) {
       if (!hasDataEntryForPerson(sleepData2, dateKey)) continue;
-      // check birth filter: skip cycles whose day < childBirthDate
-      const sleepStartDateMs = (() => {
-        const d = new Date(dateKey);
-        return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-      })();
-      if (childBirthDateMs > 0 && sleepStartDateMs < childBirthDateMs) {
-        continue;
-      }
+      const sleepStartDateMs = new Date(dateKey).setHours(0, 0, 0, 0);
+      if (childBirthDateMs > 0 && sleepStartDateMs < childBirthDateMs) continue;
   
       for (const cycle of sleepData2[dateKey]) {
         if (!cycle || !cycle.sleep || !cycle.wake) continue;
         try {
           let sleepStartMs = toMs(dateKey, cycle.sleep);
           let wakeEndMs = toMs(dateKey, cycle.wake);
-          if (wakeEndMs <= sleepStartMs) wakeEndMs += 24*60*60*1000;
-          allSleepCyclesWithAbsoluteTime.push({
-            person: 2,
-            sleep: cycle.sleep,
-            wake: cycle.wake,
-            sleepStartMs,
-            wakeEndMs
-          });
-        } catch(e){ console.warn("parse error", e); }
+          if (wakeEndMs <= sleepStartMs) wakeEndMs += 24 * 60 * 60 * 1000;
+  
+          const splitCycles = splitIfCrosses(2, cycle.sleep, cycle.wake, sleepStartMs, wakeEndMs);
+          allSleepCyclesWithAbsoluteTime.push(...splitCycles);
+        } catch (e) { console.warn("parse error", e); }
       }
     }
   
-    // now for each display row, pick cycles overlapping that row (7:00 - +24h -> next day 7:00)
+    // 日ごとの割り当て
     const cyclesToDrawPerDay = {};
     for (let i = 0; i < allDatesInPeriod.length; i++) {
       const displayDateStr = allDatesInPeriod[i];
