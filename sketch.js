@@ -66,7 +66,6 @@ window.setup = function() {
 window.draw = function() {
   if (!currentRenderer) return;
   const settings = readUISettings();
-  console.log(settings)
   currentRenderer.draw({
     p5: window, // rendererでp5グローバル関数を使うために渡す
     allDatesInPeriod,
@@ -103,5 +102,6 @@ export function updateVisualization() {
 }
 
 window.windowResized = function() {
+    console.log("windowResized")
   updateVisualization();
 }
