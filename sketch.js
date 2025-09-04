@@ -11,57 +11,113 @@ let cyclesToDrawPerDay = {};
 let currentRenderer = null;
 let timelineRenderer, longestRenderer;
 
+// window.preload = function() {
+//   // データを読み込む（相対パスは index.html の場所に合わせて調整してください）
+//   loadAllJson({
+//     p1: "../data/sleep_wake_data.json",
+//     p2: "../data/sleep_wake_data_2.json",
+//     events: "../data/event.json"
+//   }).then(results => {
+//     sleepData1 = results.p1 || {};
+//     sleepData2 = results.p2 || {};
+//     eventData = results.events || {};
+//     // デフォルトで日付ピッカーにデータ範囲を設定できるようにDOMに入力
+//     const startDatePicker = select('#startDatePicker');
+//     const endDatePicker = select('#endDatePicker');
+//     const keys = Array.from(new Set([...Object.keys(sleepData1), ...Object.keys(sleepData2)])).sort((a,b)=>new Date(a)-new Date(b));
+//     if (keys.length) {
+//       if (!startDatePicker.value()) startDatePicker.value(keys[0]);
+//       if (!endDatePicker.value()) endDatePicker.value(keys[keys.length-1]);
+//     }
+//   }).catch(err=>{
+//     console.error("データ読み込みエラー:", err);
+//   });
+// };
 window.preload = function() {
-  // データを読み込む（相対パスは index.html の場所に合わせて調整してください）
-  loadAllJson({
-    p1: "../data/sleep_wake_data.json",
-    p2: "../data/sleep_wake_data_2.json",
-    events: "../data/event.json"
-  }).then(results => {
-    sleepData1 = results.p1 || {};
-    sleepData2 = results.p2 || {};
-    eventData = results.events || {};
-    // デフォルトで日付ピッカーにデータ範囲を設定できるようにDOMに入力
-    const startDatePicker = select('#startDatePicker');
-    const endDatePicker = select('#endDatePicker');
-    const keys = Array.from(new Set([...Object.keys(sleepData1), ...Object.keys(sleepData2)])).sort((a,b)=>new Date(a)-new Date(b));
-    if (keys.length) {
-      if (!startDatePicker.value()) startDatePicker.value(keys[0]);
-      if (!endDatePicker.value()) endDatePicker.value(keys[keys.length-1]);
-    }
-  }).catch(err=>{
-    console.error("データ読み込みエラー:", err);
-  });
-};
+    // preloadでは何もせず、setup内でロードを開始する方法でもOK
+  };
 
+// window.setup = function() {
+//   createCanvas(windowWidth, windowHeight).parent(select('body'));
+//   angleMode(DEGREES);
+//   noLoop();
+
+//   // レンダラーを作る
+//   timelineRenderer = new TimelineRenderer();
+//   longestRenderer = new LongestRenderer();
+
+//   // UIを初期化（イベントハンドラは ui.js 側で updateVisualization を呼ぶ）
+//   initUI({
+//     onChange: () => {
+//       updateVisualization();
+//     },
+//     onToggleRenderer: (mode) => {
+//       // 切り替え
+//       if (mode === 'timeline') currentRenderer = timelineRenderer;
+//       else currentRenderer = longestRenderer;
+//       updateVisualization();
+//     }
+//   });
+
+//   // デフォルトレンダラー
+//   currentRenderer = timelineRenderer;
+
+//   // 初期日付範囲生成（UIの値を読む）
+//   updateVisualization();
+// };
 window.setup = function() {
-  createCanvas(windowWidth, windowHeight).parent(select('body'));
-  angleMode(DEGREES);
-  noLoop();
-
-  // レンダラーを作る
-  timelineRenderer = new TimelineRenderer();
-  longestRenderer = new LongestRenderer();
-
-  // UIを初期化（イベントハンドラは ui.js 側で updateVisualization を呼ぶ）
-  initUI({
-    onChange: () => {
+    createCanvas(windowWidth, windowHeight).parent(select('body'));
+    angleMode(DEGREES);
+    noLoop();
+  
+    // レンダラーを作る
+    timelineRenderer = new TimelineRenderer();
+    longestRenderer = new LongestRenderer();
+  
+    // UIを初期化
+    initUI({
+      onChange: () => {
+        updateVisualization();
+      },
+      onToggleRenderer: (mode) => {
+        if (mode === 'timeline') currentRenderer = timelineRenderer;
+        else currentRenderer = longestRenderer;
+        updateVisualization();
+      }
+    });
+  
+    // デフォルトレンダラー
+    currentRenderer = timelineRenderer;
+  
+    // --- データロードをここで開始 ---
+    loadAllJson({
+      p1: "../data/sleep_wake_data.json",
+      p2: "../data/sleep_wake_data_2.json",
+      events: "../data/event.json"
+    }).then(results => {
+      sleepData1 = results.p1 || {};
+      sleepData2 = results.p2 || {};
+      eventData = results.events || {};
+  
+      // データ範囲に応じて日付ピッカーを更新
+      const startDatePicker = select('#startDatePicker');
+      const endDatePicker = select('#endDatePicker');
+      const keys = Array.from(new Set([
+        ...Object.keys(sleepData1),
+        ...Object.keys(sleepData2)
+      ])).sort((a,b)=>new Date(a)-new Date(b));
+      if (keys.length) {
+        if (!startDatePicker.value()) startDatePicker.value(keys[0]);
+        if (!endDatePicker.value()) endDatePicker.value(keys[keys.length-1]);
+      }
+  
+      // データ揃ったので描画開始！
       updateVisualization();
-    },
-    onToggleRenderer: (mode) => {
-      // 切り替え
-      if (mode === 'timeline') currentRenderer = timelineRenderer;
-      else currentRenderer = longestRenderer;
-      updateVisualization();
-    }
-  });
-
-  // デフォルトレンダラー
-  currentRenderer = timelineRenderer;
-
-  // 初期日付範囲生成（UIの値を読む）
-  updateVisualization();
-};
+  
+    }).catch(err => {
+      console.error("データ読み込みエラー:", err);
+    });
+  };
 
 window.draw = function() {
   if (!currentRenderer) return;
