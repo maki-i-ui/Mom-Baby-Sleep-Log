@@ -21,77 +21,50 @@ export function generateAllDatesInPeriod(startDateStr, endDateStr) {
   /**
    * 日跨ぎを 24:00 で切り分ける prepareSleepCyclesForDrawing
    */
-  export function prepareSleepCyclesForDrawing({
-    sleepData1 = {},
-    sleepData2 = {},
-    allDatesInPeriod = [],
-    childBirthDateStr = ''
-  }) {
-    const allSleepCyclesByDay = {};
-  
-    // 子の誕生日フィルタ
-    let childBirthDateMs = 0;
-    if (childBirthDateStr) {
-      const t = new Date(childBirthDateStr);
-      childBirthDateMs = new Date(t.getFullYear(), t.getMonth(), t.getDate()).getTime();
-    }
-  
-    const processData = (data, person) => {
-      for (const dateKey in data) {
-        if (!hasDataEntryForPerson(data, dateKey)) continue;
-  
-        const dateMs = new Date(dateKey).setHours(0, 0, 0, 0);
-        if (person === 2 && childBirthDateMs > 0 && dateMs < childBirthDateMs) continue;
-  
-        for (const cycle of data[dateKey]) {
-          if (!cycle || !cycle.sleep || !cycle.wake) continue;
-  
-          const sleepStartMs = new Date(`${dateKey}T${cycle.sleep}:00`).getTime();
-          const wakeEndMs = cycle.wake_date
-            ? new Date(`${cycle.wake_date}T${cycle.wake}:00`).getTime()
-            : (() => {
-                const w = new Date(`${dateKey}T${cycle.wake}:00`).getTime();
-                return w <= sleepStartMs ? w + 24 * 60 * 60 * 1000 : w;
-              })();
-  
-          // 日跨ぎ分割
-          let curStartMs = sleepStartMs;
-          while (curStartMs < wakeEndMs) {
-            const curDate = new Date(curStartMs);
-            const curDateStr = curDate.toISOString().split('T')[0];
-            const nextMidnightMs = new Date(curDate.getFullYear(), curDate.getMonth(), curDate.getDate() + 1).getTime();
-            const curEndMs = Math.min(nextMidnightMs, wakeEndMs);
-  
-            const sleepStr = curStartMs === sleepStartMs ? cycle.sleep : '00:00';
-            const wakeStr = curEndMs === wakeEndMs
-              ? cycle.wake
-              : '23:59';
-  
-            if (!allSleepCyclesByDay[curDateStr]) {
-              allSleepCyclesByDay[curDateStr] = { person1: [], person2: [] };
-            }
-            allSleepCyclesByDay[curDateStr][`person${person}`].push({
-              sleep: sleepStr,
-              wake: wakeStr,
-              sleepStartMs: curStartMs,
-              wakeEndMs: curEndMs
-            });
-  
-            curStartMs = curEndMs;
-          }
+export function prepareSleepCyclesForDrawing({ sleepData1, sleepData2, allDatesInPeriod }) {
+  const cyclesToDrawPerDay = {};
+
+  // 人ごとに処理
+  const persons = { person1: sleepData1, person2: sleepData2 };
+
+  Object.keys(persons).forEach(personKey => {
+    const sleepData = persons[personKey];
+
+    Object.keys(sleepData).forEach(dateStr => {
+      if (!cyclesToDrawPerDay[dateStr]) cyclesToDrawPerDay[dateStr] = { person1: [], person2: [] };
+
+      const cycles = sleepData[dateStr];
+      if (!Array.isArray(cycles)) return;
+
+      cycles.forEach(cycle => {
+        const isNextDay = cycle.wake_date && cycle.wake_date !== dateStr;
+
+        if (!isNextDay) {
+          // 当日内の睡眠
+          cyclesToDrawPerDay[dateStr][personKey].push({
+            sleep: cycle.sleep,
+            wake: cycle.wake
+          });
+        } else {
+          // 日跨ぎ睡眠
+          // 当日分
+          cyclesToDrawPerDay[dateStr][personKey].push({
+            sleep: cycle.sleep,
+            wake: "23:59"
+          });
+          // 翌日分
+          const nextDate = cycle.wake_date;
+          if (!cyclesToDrawPerDay[nextDate]) cyclesToDrawPerDay[nextDate] = { person1: [], person2: [] };
+          cyclesToDrawPerDay[nextDate][personKey].push({
+            sleep: "00:00",
+            wake: cycle.wake
+          });
         }
-      }
-    };
-  
-    processData(sleepData1, 1);
-    processData(sleepData2, 2);
-  
-    // allDatesInPeriod に合わせて空の日も作る
-    const cyclesToDrawPerDay = {};
-    for (const dateStr of allDatesInPeriod) {
-      cyclesToDrawPerDay[dateStr] = allSleepCyclesByDay[dateStr] || { person1: [], person2: [] };
-    }
-  
-    return cyclesToDrawPerDay;
-  }
+      });
+    });
+  });
+
+  return cyclesToDrawPerDay;
+}
+
   
