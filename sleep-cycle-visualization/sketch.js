@@ -37,8 +37,8 @@ const MARGIN_TOP = 100;
 const MARGIN_BOTTOM = 30;
 const MARGIN_LEFT = 100;
 const MARGIN_RIGHT = 60; // 可視化領域とイベントテキスト領域の間のマージン
-const EVENT_TEXT_WIDTH = 300; // イベントテキストの固定幅を定義
-
+// const EVENT_TEXT_WIDTH = 300; // イベントテキストの固定幅を定義
+const EVENT_TEXT_WIDTH = 0;
 const TEXT_OFFSET_Y = 5; // 時刻テキストのオフセット
 
 // UI要素の参照
@@ -296,24 +296,24 @@ function mouseClicked() {
  * マウスが動いたときに呼び出されます
  */
 function mouseMoved() {
-    // 凡例のホバー判定
-    const legendX = MARGIN_LEFT;
-    const legendY = MARGIN_TOP / 2 - LEGEND_BOX_SIZE/2; // Y座標を調整
-    const person1LegendX = legendX;
-    const person2LegendX = legendX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth('mom') + 40;
+    // // 凡例のホバー判定
+    // const legendX = MARGIN_LEFT;
+    // const legendY = MARGIN_TOP / 2 - LEGEND_BOX_SIZE/2; // Y座標を調整
+    // const person1LegendX = legendX;
+    // const person2LegendX = legendX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth('mom') + 40;
 
-    let newHoveredItem = null;
-    if (mouseX >= person1LegendX && mouseX <= person1LegendX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth('mom') + 40 && mouseY >= legendY && mouseY <= legendY + LEGEND_BOX_SIZE) {
-        newHoveredItem = 'person1';
-    } else if (mouseX >= person2LegendX && mouseX <= person2LegendX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth('child') + 40 && mouseY >= legendY && mouseY <= legendY + LEGEND_BOX_SIZE) {
-        newHoveredItem = 'person2';
-    }
+    // let newHoveredItem = null;
+    // if (mouseX >= person1LegendX && mouseX <= person1LegendX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth('mom') + 40 && mouseY >= legendY && mouseY <= legendY + LEGEND_BOX_SIZE) {
+    //     newHoveredItem = 'person1';
+    // } else if (mouseX >= person2LegendX && mouseX <= person2LegendX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth('child') + 40 && mouseY >= legendY && mouseY <= legendY + LEGEND_BOX_SIZE) {
+    //     newHoveredItem = 'person2';
+    // }
 
-    // ホバー状態が変化した場合のみ再描画
-    if (newHoveredItem !== hoveredLegendItem) {
-        hoveredLegendItem = newHoveredItem;
-        redraw();
-    }
+    // // ホバー状態が変化した場合のみ再描画
+    // if (newHoveredItem !== hoveredLegendItem) {
+    //     hoveredLegendItem = newHoveredItem;
+    //     redraw();
+    // }
 }
 
 
@@ -742,17 +742,17 @@ function drawDateRows() {
 
         const visualizationRightX = width - EVENT_TEXT_WIDTH - MARGIN_RIGHT;
 
-        if (eventData && eventData[currentDisplayDateStr]) {
-            noStroke();
-            fill(TEXT_COLOR);
-            textSize(12);
-            textAlign(LEFT, CENTER);
-            const eventTextX = visualizationRightX ;
-            const eventTextY = currentYBase + ROW_HEIGHT / 2;
-            text(EVENT_TEXT_PREFIX, eventTextX, eventTextY);
-            const eventMainTextX = eventTextX + textWidth(EVENT_TEXT_PREFIX);
-            text(eventData[currentDisplayDateStr], eventMainTextX, eventTextY, EVENT_TEXT_WIDTH - 20);
-        }
+        // if (eventData && eventData[currentDisplayDateStr]) {
+        //     noStroke();
+        //     fill(TEXT_COLOR);
+        //     textSize(12);
+        //     textAlign(LEFT, CENTER);
+        //     const eventTextX = visualizationRightX ;
+        //     const eventTextY = currentYBase + ROW_HEIGHT / 2;
+        //     text(EVENT_TEXT_PREFIX, eventTextX, eventTextY);
+        //     const eventMainTextX = eventTextX + textWidth(EVENT_TEXT_PREFIX);
+        //     text(eventData[currentDisplayDateStr], eventMainTextX, eventTextY, EVENT_TEXT_WIDTH - 20);
+        // }
         
         // --- 睡眠データの描画呼び出し ---
         const dataForThisRow = cyclesToDrawPerDay[currentDisplayDateStr];
