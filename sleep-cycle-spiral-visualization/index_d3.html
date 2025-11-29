@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<body>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+const width = 600;
+const height = 600;
+const svg = d3.select("body")
+  .append("svg")
+  .attr("width", width)
+  .attr("height", height);
+
+const centerX = width / 2;
+const centerY = height / 2;
+
+// サンプルデータ（睡眠時間：start/endを0-24hで表現）
+const data = [
+  {day: 0, start: 0, end: 23}, 
+  {day: 1, start: 0, end: 23},
+  {day: 2, start: 0, end: 23},
+  {day: 3, start: 0, end: 23},
+  {day: 4, start: 0, end: 23}
+];
+
+// スパイラルパラメータ
+const baseRadius = 200; // 0日目の開始半径
+const radiusIncrement = 1; // 日ごとの半径増加
+
+// 1日を0〜2πに対応させる
+const hourToAngle = h => (h / 24) * 2 * Math.PI;
+
+// 線を描画する関数
+const lineGenerator = d3.line()
+  .x(d => d.x)
+  .y(d => d.y)
+  .curve(d3.curveCardinal);
+
+// 各日の睡眠データをスパイラル上に変換
+data.forEach(d => {
+  const steps = 50;
+  let points = [];
+
+  // 時間が0を跨ぐ場合を考慮
+  let startHour = d.start;
+  let endHour = d.end > d.start ? d.end : d.end + 24;
+
+  const startRadius = baseRadius + radiusIncrement * d.day;
+  const endRadius = baseRadius + radiusIncrement * (d.day + 1); // 1日内でも少し半径増加
+
+  for(let i = 0; i <= steps; i++){
+    const t = i / steps;
+    const hour = startHour + (endHour - startHour) * t;
+    const angle = hourToAngle(hour % 24);
+    const r = startRadius + (endRadius - startRadius) * t; // 徐々に半径増加
+    const x = centerX + r * Math.cos(angle);
+    const y = centerY + r * Math.sin(angle);
+    points.push({x, y});
+  }
+
+  svg.append("path")
+    .datum(points)
+    .attr("d", lineGenerator)
+    .attr("stroke", "steelblue")
+    .attr("stroke-width", 0.5)
+    .attr("fill", "none");
+});
+</script>
