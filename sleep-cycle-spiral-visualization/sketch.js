@@ -65,8 +65,8 @@ let startDatePicker, endDatePicker, applyDateRangeButton,childBirthDatePicker;
 
 // --- 時間軸に関する定数 ---
 // 各行の表示範囲を午前7時から翌日の午前7時とする
-const DISPLAY_START_HOUR = 7;
-const DISPLAY_END_HOUR = 7 + 24; // 翌日の7時
+const DISPLAY_START_HOUR = 0;//7;
+const DISPLAY_END_HOUR = 24;//7 + 24; // 翌日の7時
 
 const DISPLAY_START_MINUTE_ABSOLUTE = DISPLAY_START_HOUR * 60; // 7時の絶対分数 (0:00基準)
 const DISPLAY_END_MINUTE_ABSOLUTE = DISPLAY_END_HOUR * 60; // 翌7時の絶対分数 (0:00基準)
@@ -174,7 +174,7 @@ function setup() {
   toggleButton.mousePressed(toggleControlsPanel); // クリックイベントを設定
 
   background(255);
-  angleMode(DEGREES);
+//   angleMode(DEGREES);
 
   // --- UI要素の参照とイベントリスナーの設定 ---
   startDatePicker = select('#startDatePicker');
@@ -468,28 +468,28 @@ function drawBackgrounds() {
     const displayEndMinute = DISPLAY_END_MINUTE_ABSOLUTE; 
 
     // 日中と夜間の境界 (0:00基準の絶対分数)
-    const dayStartAbsoluteMinute = 7 * 60;  // 7:00
-    const dayEndAbsoluteMinute = 19 * 60;   // 19:00
+    const dayStartAbsoluteMinute = 0 * 60;  // 0:00
+    const dayEndAbsoluteMinute = 24 * 60;   // 24:00
     
     const totalVisualizationHeight = allDatesInPeriod.length * (ROW_HEIGHT + ROW_GAP) - (allDatesInPeriod.length > 0 ? ROW_GAP : 0); 
     
     noStroke();
-
-    // 日中背景（7:00 - 19:00）
-    const dayBgStartX = map(dayStartAbsoluteMinute, displayStartMinute, displayEndMinute, MARGIN_LEFT, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT);
-    const dayBgEndX = map(dayEndAbsoluteMinute, displayStartMinute, displayEndMinute, MARGIN_LEFT, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT);
+    //背景の塗りは一旦なし 11/29
+    // // 日中背景（7:00 - 19:00）
+    // const dayBgStartX = map(dayStartAbsoluteMinute, displayStartMinute, displayEndMinute, MARGIN_LEFT, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT);
+    // const dayBgEndX = map(dayEndAbsoluteMinute, displayStartMinute, displayEndMinute, MARGIN_LEFT, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT);
     
-    fill(DAY_BG_COLOR);
-    rect(dayBgStartX, MARGIN_TOP, dayBgEndX - dayBgStartX, totalVisualizationHeight);
+    // fill(DAY_BG_COLOR);
+    // rect(dayBgStartX, MARGIN_TOP, dayBgEndX - dayBgStartX, totalVisualizationHeight);
 
     // 夜間背景
-    fill(NIGHT_BG_COLOR);
+    // fill(NIGHT_BG_COLOR);
     
-    // Part 1: その日の日中の終了 (19:00) から翌日の日中の開始 (翌7:00) まで
-    // これは 19:00 から翌日 7:00 までが夜間
-    const nightPart2StartX = map(dayEndAbsoluteMinute, displayStartMinute, displayEndMinute, MARGIN_LEFT, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT);
-    const nightPart2EndX = map(DISPLAY_END_MINUTE_ABSOLUTE, displayStartMinute, displayEndMinute, MARGIN_LEFT, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT);
-    rect(nightPart2StartX, MARGIN_TOP, nightPart2EndX - nightPart2StartX, totalVisualizationHeight);
+    // // Part 1: その日の日中の終了 (19:00) から翌日の日中の開始 (翌7:00) まで
+    // // これは 19:00 から翌日 7:00 までが夜間
+    // const nightPart2StartX = map(dayEndAbsoluteMinute, displayStartMinute, displayEndMinute, MARGIN_LEFT, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT);
+    // const nightPart2EndX = map(DISPLAY_END_MINUTE_ABSOLUTE, displayStartMinute, displayEndMinute, MARGIN_LEFT, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT);
+    // rect(nightPart2StartX, MARGIN_TOP, nightPart2EndX - nightPart2StartX, totalVisualizationHeight);
 }
 
 
@@ -612,9 +612,9 @@ function prepareSleepCyclesForDrawing() {
         const displayDateStr = allDatesInPeriod[i];
         const displayDateObj = new Date(displayDateStr);
 
-        // その行の表示期間 (ミリ秒): displayDateStr の 7:00 から 翌日 の 7:00
+        // その行の表示期間 (ミリ秒): displayDateStr の 0:00 から 翌日 の 0:00
         const rowDisplayStartMs = displayDateObj.getTime() + DISPLAY_START_MINUTE_ABSOLUTE * 60 * 1000;
-        const rowDisplayEndMs = displayDateObj.getTime() + DISPLAY_END_MINUTE_ABSOLUTE * 60 * 1000; // 翌日7時の絶対ミリ秒
+        const rowDisplayEndMs = displayDateObj.getTime() + DISPLAY_END_MINUTE_ABSOLUTE * 60 * 1000; // 翌日0時の絶対ミリ秒
 
         let cyclesForCurrentRowPerson1 = [];
         let cyclesForCurrentRowPerson2 = [];
@@ -764,11 +764,11 @@ function drawDateRows() {
         // 凡例の状態に基づいて描画を呼び出す
         if (isPerson1Visible) {
             // Y座標を統一
-            drawSleepWakeCycles(dataForThisRow.person1, getDisplayColor('person1', SLEEP_COLOR1), currentYBase, currentDisplayDateStr, currentYBase, i);
+            drawSleepWakeCyclesSpiral(dataForThisRow.person1, getDisplayColor('person1', SLEEP_COLOR1),  currentDisplayDateStr,  i);
         }
         if (isPerson2Visible) {
             // Y座標を統一
-            drawSleepWakeCycles(dataForThisRow.person2, getDisplayColor('person2', SLEEP_COLOR2), currentYBase, currentDisplayDateStr, currentYBase, i);
+            drawSleepWakeCyclesSpiral(dataForThisRow.person2, getDisplayColor('person2', SLEEP_COLOR2), currentDisplayDateStr,  i);
         }
     }
 }
@@ -852,7 +852,7 @@ function drawTimeAxis() {
         { hour: 31, text: '07:00 (+1d)' } // 翌日7:00
     ];
 
-    // 表示範囲は 7:00 から翌日 7:00
+    // 表示範囲は 0:00 から翌日 0:00
     const displayStartMinute = DISPLAY_START_HOUR * 60;
     const displayEndMinute = DISPLAY_END_HOUR * 60;
 
@@ -901,6 +901,10 @@ function drawZeroOClockGuideLine() {
     if (zeroOClockX > MARGIN_LEFT && zeroOClockX < width - EVENT_TEXT_WIDTH - MARGIN_RIGHT) {
         line(zeroOClockX, MARGIN_TOP, zeroOClockX, height - MARGIN_BOTTOM);
     }
+    const cx = width / 2;
+    const cy = height / 2;
+    line(cx,cy,cx,0);
+    line(cx,cy,cx*2,cy);
 }
 
 
@@ -981,6 +985,130 @@ function drawSleepWakeCycles(cycles, color, yBase, displayDateStr, currentColumn
         }
     }
 }
+
+// 【設定値】画面上のUIで変更したいパラメータ（Tweakpane等で操作可能にする想定）
+let PARAMS = {
+    baseRadius: 30,     // 螺旋の開始半径（真ん中の空洞の大きさ）
+    ringSpacing: 2,    // 1日ごとのリングの間隔（旧 ROW_HEIGHT）
+    strokeWeight: 1,    // 線の太さ
+    dotSize: 1        // ドットのサイズ
+};
+
+/**
+ * 螺旋状に睡眠サイクルを描画する関数
+ */
+
+function drawSleepWakeCyclesSpiral(cycles, colorVal, displayDateStr, currentColumnIndex) {
+    // 画面の中心を基準点とする
+    const cx = width / 2;
+    const cy = height / 2;
+
+    // 半径の計算： 日付インデックスが進むほど外側に広がる
+    // (直線版の yBase の代わり)
+    const currentRadius = PARAMS.baseRadius + (currentColumnIndex * PARAMS.ringSpacing);
+
+    if (!cycles || cycles.length === 0) return;
+
+    const currentDisplayDateObj = new Date(displayDateStr);
+    // 表示範囲の絶対ミリ秒計算 (元のロジックを維持)
+    const rowDisplayStartMs = currentDisplayDateObj.getTime() + DISPLAY_START_MINUTE_ABSOLUTE * 60 * 1000;
+    const rowDisplayEndMs = currentDisplayDateObj.getTime() + DISPLAY_END_MINUTE_ABSOLUTE * 60 * 1000;
+    const totalDisplayMinutes = DISPLAY_END_MINUTE_ABSOLUTE - DISPLAY_START_MINUTE_ABSOLUTE;
+
+    // p5.jsの角度は 0 が「3時」の位置なので、-90度(-HALF_PI)して「12時」を0分とする
+    const ANGLE_OFFSET = -HALF_PI; 
+
+    for (const cycle of cycles) {
+        const sleepStartMs = cycle.sleepStartMs;
+        const wakeEndMs = cycle.wakeEndMs;
+
+        // --- データ切り出しロジック（変更なし） ---
+        const intersectionStartMs = max(sleepStartMs, rowDisplayStartMs);
+        const intersectionEndMs = min(wakeEndMs, rowDisplayEndMs); 
+
+        if (intersectionStartMs >= intersectionEndMs) continue;
+
+        // --- 座標変換ロジック（ここを変更） ---
+        
+        // 1. 時間を「角度」に変換する
+        // 直線版: map(..., MARGIN_LEFT, width...)
+        // 螺旋版: map(..., 0, TWO_PI) ※TWO_PIは360度
+        const relativeStartMins = (intersectionStartMs - rowDisplayStartMs) / (60 * 1000);
+        const relativeEndMins = (intersectionEndMs - rowDisplayStartMs) / (60 * 1000);
+
+        let startAngle = map(relativeStartMins, 0, totalDisplayMinutes, 0, TWO_PI) + ANGLE_OFFSET;
+        let endAngle = map(relativeEndMins, 0, totalDisplayMinutes, 0, TWO_PI) + ANGLE_OFFSET;
+        // let startAngle = 0 ;
+        // let endAngle = HALF_PI ;
+        // 2. 線の描画 (arcを使用)
+        stroke(colorVal);
+        strokeWeight(PARAMS.strokeWeight);
+        noFill();
+        strokeCap(ROUND); // 線の端を丸くする
+
+        // arc(x, y, w, h, start, stop) -> w, hは直径なので 半径*2
+        arc(cx, cy, currentRadius * 2, currentRadius * 2, startAngle, endAngle);
+
+
+        // 3. ドットとテキストの描画
+        fill(colorVal);
+        noStroke();
+
+        // 極座標から直交座標(x,y)への変換ヘルパー
+        // x = cx + cos(angle) * r
+        // y = cy + sin(angle) * r
+        
+        // 睡眠開始点 (ドット)
+        if (intersectionStartMs === sleepStartMs) {
+            let sx = cx + cos(startAngle) * currentRadius;
+            let sy = cy + sin(startAngle) * currentRadius;
+            ellipse(sx, sy, PARAMS.dotSize, PARAMS.dotSize);
+            
+            // テキスト描画（必要に応じて）
+            if (SHOW_TIME_TEXT) {
+                drawRadialText(cycle.sleep, startAngle, currentRadius, cx, cy, "start");
+            }
+        }
+        
+        // 起床点 (ドット)
+        if (intersectionEndMs === wakeEndMs) {
+            let ex = cx + cos(endAngle) * currentRadius;
+            let ey = cy + sin(endAngle) * currentRadius;
+            ellipse(ex, ey, PARAMS.dotSize, PARAMS.dotSize);
+
+            if (SHOW_TIME_TEXT) {
+                drawRadialText(cycle.wake, endAngle, currentRadius, cx, cy, "end");
+            }
+        }
+    }
+}
+
+/**
+ * 螺旋に合わせてテキストを描画するヘルパー関数
+ */
+function drawRadialText(str, angle, radius, cx, cy, type) {
+    push();
+    fill(TEXT_COLOR);
+    textSize(10);
+    noStroke();
+    
+    // 文字を少し外側（または内側）にずらす
+    let textRadius = radius + (type === "start" ? -10 : 10); 
+    
+    // 座標計算
+    let tx = cx + cos(angle) * textRadius;
+    let ty = cy + sin(angle) * textRadius;
+    
+    translate(tx, ty);
+    // 文字自体を角度に合わせて回転させるなら以下を有効化
+    // rotate(angle + HALF_PI); 
+    
+    textAlign(CENTER, CENTER);
+    text(str, 0, 0);
+    pop();
+}
+
+
 /**
  * A function to toggle the controls panel open and closed
  */
