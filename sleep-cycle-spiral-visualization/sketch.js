@@ -988,7 +988,7 @@ function drawSleepWakeCycles(cycles, color, yBase, displayDateStr, currentColumn
 
 // 【設定値】画面上のUIで変更したいパラメータ（Tweakpane等で操作可能にする想定）
 let PARAMS = {
-    baseRadius: 30,     // 螺旋の開始半径（真ん中の空洞の大きさ）
+    baseRadius: 60,     // 螺旋の開始半径（真ん中の空洞の大きさ）
     ringSpacing: 2,    // 1日ごとのリングの間隔（旧 ROW_HEIGHT）
     strokeWeight: 1,    // 線の太さ
     dotSize: 1        // ドットのサイズ
