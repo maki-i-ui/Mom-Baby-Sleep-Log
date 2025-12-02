@@ -764,11 +764,11 @@ function drawDateRows() {
         // 凡例の状態に基づいて描画を呼び出す
         if (isPerson1Visible) {
             // Y座標を統一
-            drawSleepWakeCyclesSpiral(dataForThisRow.person1, getDisplayColor('person1', SLEEP_COLOR1),  currentDisplayDateStr,  i);
+            drawSleepWakeCyclesSpiral(dataForThisRow.person1, Math.random()*10,  currentDisplayDateStr,  i);
         }
         if (isPerson2Visible) {
             // Y座標を統一
-            drawSleepWakeCyclesSpiral(dataForThisRow.person2, getDisplayColor('person2', SLEEP_COLOR2), currentDisplayDateStr,  i);
+            // drawSleepWakeCyclesSpiral(dataForThisRow.person2, getDisplayColor('person2', SLEEP_COLOR2), currentDisplayDateStr,  i);
         }
     }
 }
@@ -989,7 +989,7 @@ function drawSleepWakeCycles(cycles, color, yBase, displayDateStr, currentColumn
 // 【設定値】画面上のUIで変更したいパラメータ（Tweakpane等で操作可能にする想定）
 let PARAMS = {
     baseRadius: 60,     // 螺旋の開始半径（真ん中の空洞の大きさ）
-    ringSpacing: 2,    // 1日ごとのリングの間隔（旧 ROW_HEIGHT）
+    ringSpacing: 1,    // 1日ごとのリングの間隔（旧 ROW_HEIGHT）
     strokeWeight: 1,    // 線の太さ
     dotSize: 1        // ドットのサイズ
 };
@@ -998,79 +998,87 @@ let PARAMS = {
  * 螺旋状に睡眠サイクルを描画する関数
  */
 
-function drawSleepWakeCyclesSpiral(cycles, colorVal, displayDateStr, currentColumnIndex) {
-    // 画面の中心を基準点とする
+function drawSleepWakeCyclesSpiral(cycles, maxSleepHoursOfDay, displayDateStr, currentColumnIndex) {
+    // ==========================================
+    // 追加：色を最長睡眠時間から算出する
+    // ==========================================
+    // 設定する色（必要なら調整）
+    const colorRed = color(255, 80, 80);   // 最長睡眠が短い（しんどい）
+    const colorBlue = color(80, 120, 255); // よく眠れた日
+
+    // maxSleepHoursOfDay を 0〜10 時間の範囲と仮定（必要に応じて変更）
+    const MAX_POSSIBLE_HOURS = 10;
+
+    let maxHours = 0;
+
+    cycles.forEach(cycle => {
+      const hours = (cycle.wakeEndMs - cycle.sleepStartMs) / (1000 * 60 * 60);
+      if (hours > maxHours) maxHours = hours;
+    });
+
+    console.log(maxHours)
+    // 正規化（0 = 赤、1 = 青）
+    let t = constrain(maxHours / MAX_POSSIBLE_HOURS, 0, 1);
+
+    // 色補間
+    let colorVal = lerpColor(colorRed, colorBlue, t);
+
+    // ==========================================
+    // 元の描画処理
+    // ==========================================
+
     const cx = width / 2;
     const cy = height / 2;
 
-    // 半径の計算： 日付インデックスが進むほど外側に広がる
-    // (直線版の yBase の代わり)
     const currentRadius = PARAMS.baseRadius + (currentColumnIndex * PARAMS.ringSpacing);
 
     if (!cycles || cycles.length === 0) return;
 
     const currentDisplayDateObj = new Date(displayDateStr);
-    // 表示範囲の絶対ミリ秒計算 (元のロジックを維持)
+
     const rowDisplayStartMs = currentDisplayDateObj.getTime() + DISPLAY_START_MINUTE_ABSOLUTE * 60 * 1000;
     const rowDisplayEndMs = currentDisplayDateObj.getTime() + DISPLAY_END_MINUTE_ABSOLUTE * 60 * 1000;
     const totalDisplayMinutes = DISPLAY_END_MINUTE_ABSOLUTE - DISPLAY_START_MINUTE_ABSOLUTE;
 
-    // p5.jsの角度は 0 が「3時」の位置なので、-90度(-HALF_PI)して「12時」を0分とする
-    const ANGLE_OFFSET = -HALF_PI; 
+    const ANGLE_OFFSET = -HALF_PI;
 
     for (const cycle of cycles) {
         const sleepStartMs = cycle.sleepStartMs;
         const wakeEndMs = cycle.wakeEndMs;
 
-        // --- データ切り出しロジック（変更なし） ---
         const intersectionStartMs = max(sleepStartMs, rowDisplayStartMs);
-        const intersectionEndMs = min(wakeEndMs, rowDisplayEndMs); 
+        const intersectionEndMs = min(wakeEndMs, rowDisplayEndMs);
 
         if (intersectionStartMs >= intersectionEndMs) continue;
 
-        // --- 座標変換ロジック（ここを変更） ---
-        
-        // 1. 時間を「角度」に変換する
-        // 直線版: map(..., MARGIN_LEFT, width...)
-        // 螺旋版: map(..., 0, TWO_PI) ※TWO_PIは360度
         const relativeStartMins = (intersectionStartMs - rowDisplayStartMs) / (60 * 1000);
         const relativeEndMins = (intersectionEndMs - rowDisplayStartMs) / (60 * 1000);
 
         let startAngle = map(relativeStartMins, 0, totalDisplayMinutes, 0, TWO_PI) + ANGLE_OFFSET;
         let endAngle = map(relativeEndMins, 0, totalDisplayMinutes, 0, TWO_PI) + ANGLE_OFFSET;
-        // let startAngle = 0 ;
-        // let endAngle = HALF_PI ;
-        // 2. 線の描画 (arcを使用)
+
         stroke(colorVal);
         strokeWeight(PARAMS.strokeWeight);
         noFill();
-        strokeCap(ROUND); // 線の端を丸くする
+        strokeCap(ROUND);
 
-        // arc(x, y, w, h, start, stop) -> w, hは直径なので 半径*2
         arc(cx, cy, currentRadius * 2, currentRadius * 2, startAngle, endAngle);
 
-
-        // 3. ドットとテキストの描画
         fill(colorVal);
         noStroke();
 
-        // 極座標から直交座標(x,y)への変換ヘルパー
-        // x = cx + cos(angle) * r
-        // y = cy + sin(angle) * r
-        
-        // 睡眠開始点 (ドット)
+        // 開始ドット
         if (intersectionStartMs === sleepStartMs) {
             let sx = cx + cos(startAngle) * currentRadius;
             let sy = cy + sin(startAngle) * currentRadius;
             ellipse(sx, sy, PARAMS.dotSize, PARAMS.dotSize);
-            
-            // テキスト描画（必要に応じて）
+
             if (SHOW_TIME_TEXT) {
                 drawRadialText(cycle.sleep, startAngle, currentRadius, cx, cy, "start");
             }
         }
-        
-        // 起床点 (ドット)
+
+        // 終了ドット
         if (intersectionEndMs === wakeEndMs) {
             let ex = cx + cos(endAngle) * currentRadius;
             let ey = cy + sin(endAngle) * currentRadius;
@@ -1082,6 +1090,7 @@ function drawSleepWakeCyclesSpiral(cycles, colorVal, displayDateStr, currentColu
         }
     }
 }
+
 
 /**
  * 螺旋に合わせてテキストを描画するヘルパー関数
