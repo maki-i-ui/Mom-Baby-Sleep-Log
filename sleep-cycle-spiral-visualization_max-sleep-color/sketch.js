@@ -65,8 +65,8 @@ let startDatePicker, endDatePicker, applyDateRangeButton,childBirthDatePicker;
 
 // --- 時間軸に関する定数 ---
 // 各行の表示範囲を午前7時から翌日の午前7時とする
-const DISPLAY_START_HOUR = 0;//7;
-const DISPLAY_END_HOUR = 24;//7 + 24; // 翌日の7時
+const DISPLAY_START_HOUR = 7;//7;
+const DISPLAY_END_HOUR = 7+24;//7 + 24; // 翌日の7時
 
 const DISPLAY_START_MINUTE_ABSOLUTE = DISPLAY_START_HOUR * 60; // 7時の絶対分数 (0:00基準)
 const DISPLAY_END_MINUTE_ABSOLUTE = DISPLAY_END_HOUR * 60; // 翌7時の絶対分数 (0:00基準)
@@ -90,7 +90,7 @@ const LEGEND_TEXT_OFFSET = 5;
  */
 function preload() {
     // sleepData1の読み込み
-    loadJSON('../data/sleep_wake_data.json', (data) => {
+    loadJSON('../data/sleep_wake_data_test.json', (data) => {
       sleepData1 = data;
       // sleepData2も読み込まれているかチェックしてから日付計算を呼び出す
       if (sleepData2) { // sleepData2が先に読み込まれている場合
@@ -99,7 +99,7 @@ function preload() {
     });
   
     // sleepData2の読み込み
-    loadJSON('../data/sleep_wake_data_2.json', (data) => {
+    loadJSON('../data/sleep_wake_data_2_test.json', (data) => {
       sleepData2 = data;
       // sleepData1も読み込まれているかチェックしてから日付計算を呼び出す
       if (sleepData1) { // sleepData1が先に読み込まれている場合
@@ -468,8 +468,8 @@ function drawBackgrounds() {
     const displayEndMinute = DISPLAY_END_MINUTE_ABSOLUTE; 
 
     // 日中と夜間の境界 (0:00基準の絶対分数)
-    const dayStartAbsoluteMinute = 0 * 60;  // 0:00
-    const dayEndAbsoluteMinute = 24 * 60;   // 24:00
+    const dayStartAbsoluteMinute = 7 * 60;  // 0:00
+    const dayEndAbsoluteMinute = 19 * 60;   // 24:00
     
     const totalVisualizationHeight = allDatesInPeriod.length * (ROW_HEIGHT + ROW_GAP) - (allDatesInPeriod.length > 0 ? ROW_GAP : 0); 
     
@@ -507,138 +507,116 @@ function hasDataEntryForPerson(data, date) {
  * 各日の睡眠・起床サイクルを描画するデータを事前に準備する関数
  * この関数は、allDatesInPeriod内の各日付に対して、その行に描画されるべき睡眠サイクルを計算し、cyclesToDrawPerDayに格納します。
  */
+/**
+ * スパイラル用に、睡眠開始日のみにサイクルを持たせ、
+ * 日またぎ睡眠を翌日に複製しないように修正したバージョン
+ */
 function prepareSleepCyclesForDrawing() {
-    cyclesToDrawPerDay = {}; // データをリセット
+    cyclesToDrawPerDay = {}; 
 
-    // 全ての睡眠データを収集し、絶対時刻を計算する
-    // これを一度行い、その後で各表示行に割り当てる
     let allSleepCyclesWithAbsoluteTime = [];
 
-    // 子供の出生日を取得し、Dateオブジェクトに変換
+    // 出生日を ms に
     const childBirthDateStr = childBirthDatePicker.value();
-    let childBirthDateMs = 0; // デフォルト値 (0はDate変換でエラーにならない適当な過去の日付)
-    if (childBirthDateStr) {
-        const tempDate = new Date(childBirthDateStr);
-        // 日付の比較のために、その日の00:00:00のミリ秒を取得
-        childBirthDateMs = new Date(tempDate.getFullYear(), tempDate.getMonth(), tempDate.getDate()).getTime();
-    }
+    const childBirthDateMs = childBirthDateStr
+        ? new Date(new Date(childBirthDateStr).setHours(0,0,0,0)).getTime()
+        : 0;
 
-    // Person 1 の全てのJSONデータを反復処理
-    for (const dateKey in sleepData1) {
-        if (hasDataEntryForPerson(sleepData1, dateKey)) {
-            sleepData1[dateKey].forEach(cycle => {
-                // cycle.sleep または cycle.wake が無効な場合にスキップ
-                if (!cycle.sleep || typeof cycle.sleep !== 'string' ||
-                    !cycle.wake || typeof cycle.wake !== 'string') {
-                    console.warn(`Skipping invalid sleep cycle data for Person 1 on ${dateKey}:`, cycle);
-                    return; // このサイクルはスキップして次のサイクルへ
+    // --------------------------------------------------------------------
+    // sleepDataX を絶対時刻化して1本の配列にする
+    // --------------------------------------------------------------------
+    function appendCyclesFromData(sleepData, personId) {
+        console.log(sleepData)
+        for (const dateKey in sleepData) {
+            if (!hasDataEntryForPerson(sleepData, dateKey)) continue;
+
+            const baseDate = new Date(dateKey);
+            const baseMs = new Date(baseDate.setHours(0,0,0,0)).getTime();
+
+            for (const cycle of sleepData[dateKey]) {
+                if (!cycle.sleep || !cycle.wake) continue;
+
+                // --- sleep 時刻 ---
+                const sH = +cycle.sleep.slice(0, 2);
+                const sM = +cycle.sleep.slice(3, 5);
+                let sleepStartMs = baseMs + (sH * 60 + sM) * 60 * 1000;
+
+                // --- wake 時刻 ---
+                let wakeBaseMs = baseMs;
+                if (cycle.wake_date) {
+                    // wake_date がある → 完全に翌日/別日
+                    wakeBaseMs = new Date(cycle.wake_date).setHours(0,0,0,0);
                 }
 
-                let sleepHour = parseInt(cycle.sleep.substring(0, 2));
-                let sleepMinute = parseInt(cycle.sleep.substring(3, 5));
-                let wakeHour = parseInt(cycle.wake.substring(0, 2));
-                let wakeMinute = parseInt(cycle.wake.substring(3, 5));
+                const wH = +cycle.wake.slice(0, 2);
+                const wM = +cycle.wake.slice(3, 5);
+                let wakeEndMs = wakeBaseMs + (wH * 60 + wM) * 60 * 1000;
 
-                // JSONキーの日付を基準に絶対時刻を計算
-                let baseDate = new Date(dateKey); 
-                
-                let sleepStartMs = baseDate.getTime() + (sleepHour * 60 + sleepMinute) * 60 * 1000;
-                let wakeEndMs = baseDate.getTime() + (wakeHour * 60 + wakeMinute) * 60 * 1000;
-
-                // 起床時刻が睡眠時刻よりも前の場合（翌日へのまたぎ）
-                if (wakeEndMs <= sleepStartMs) { // <= に変更することで、完全に同じ時刻も翌日として扱う
-                    wakeEndMs += 24 * 60 * 60 * 1000; // 24時間を加算して翌日扱いにする
+                // 24:00 → 翌日 00:00 の扱い
+                if (cycle.wake === "24:00") {
+                    wakeEndMs = baseMs + 24 * 60 * 60 * 1000;
                 }
 
-                allSleepCyclesWithAbsoluteTime.push({
-                    person: 1, // どの人かを示す
-                    sleep: cycle.sleep,
-                    wake: cycle.wake,
-                    sleepStartMs: sleepStartMs,
-                    wakeEndMs: wakeEndMs
-                });
-            });
-        }
-    }
-
-    // Person 2 の全てのJSONデータを反復処理
-    for (const dateKey in sleepData2) {
-        if (hasDataEntryForPerson(sleepData2, dateKey)) {
-            sleepData2[dateKey].forEach(cycle => {
-                // cycle.sleep または cycle.wake が無効な場合にスキップ
-                if (!cycle.sleep || typeof cycle.sleep !== 'string' ||
-                    !cycle.wake || typeof cycle.wake !== 'string') {
-                    console.warn(`Skipping invalid sleep cycle data for Person 2 on ${dateKey}:`, cycle);
-                    return; // このサイクルはスキップして次のサイクルへ
-                }
-
-                // 睡眠開始日のDateオブジェクトを作成し、出生日と比較
-                const sleepStartDate = new Date(dateKey); // cycle.sleep が始まるJSONのキーの日付
-                const sleepStartDateMs = new Date(sleepStartDate.getFullYear(), sleepStartDate.getMonth(), sleepStartDate.getDate()).getTime();
-                
-                // 睡眠開始日が、子供の出生日よりも前であればスキップ
-                // (childBirthDateMs が 0 の場合は常に描画されることになる)
-                if (childBirthDateMs > 0 && sleepStartDateMs < childBirthDateMs) {
-                    return; // このサイクルは出生日より前なのでスキップ
-                }
-
-                let sleepHour = parseInt(cycle.sleep.substring(0, 2));
-                let sleepMinute = parseInt(cycle.sleep.substring(3, 5));
-                let wakeHour = parseInt(cycle.wake.substring(0, 2));
-                let wakeMinute = parseInt(cycle.wake.substring(3, 5));
-
-                let baseDate = new Date(dateKey); 
-                
-                let sleepStartMs = baseDate.getTime() + (sleepHour * 60 + sleepMinute) * 60 * 1000;
-                let wakeEndMs = baseDate.getTime() + (wakeHour * 60 + wakeMinute) * 60 * 1000;
-
+                // 日またぎ処理
                 if (wakeEndMs <= sleepStartMs) {
                     wakeEndMs += 24 * 60 * 60 * 1000;
                 }
 
+                // Person2のみ、出生日以前のデータを除外
+                if (personId === 2 && childBirthDateMs > 0 && sleepStartMs < childBirthDateMs) {
+                    continue;
+                }
+
+                // ★ ここが重要：cycle は完全体として1つだけ push（分割しない）
                 allSleepCyclesWithAbsoluteTime.push({
-                    person: 2, // どの人かを示す
-                    sleep: cycle.sleep,
-                    wake: cycle.wake,
-                    sleepStartMs: sleepStartMs,
-                    wakeEndMs: wakeEndMs
+                    person: personId,
+                    date: dateKey,
+                    sleep :cycle.sleep,
+                    wake :cycle.wake,
+                    sleepStartMs,
+                    wakeEndMs
+
                 });
-            });
+            }
         }
     }
 
-    // allDatesInPeriod の各日付 (表示行の基準日) について処理
+    appendCyclesFromData(sleepData1, 1);
+    appendCyclesFromData(sleepData2, 2);
+
+    console.log(allSleepCyclesWithAbsoluteTime)
+    // --------------------------------------------------------------------
+    // 1日のリングに対し、重なっている cycle を割り当てる（描画用）
+    // --------------------------------------------------------------------
     for (let i = 0; i < allDatesInPeriod.length; i++) {
-        const displayDateStr = allDatesInPeriod[i];
-        const displayDateObj = new Date(displayDateStr);
 
-        // その行の表示期間 (ミリ秒): displayDateStr の 0:00 から 翌日 の 0:00
-        const rowDisplayStartMs = displayDateObj.getTime() + DISPLAY_START_MINUTE_ABSOLUTE * 60 * 1000;
-        const rowDisplayEndMs = displayDateObj.getTime() + DISPLAY_END_MINUTE_ABSOLUTE * 60 * 1000; // 翌日0時の絶対ミリ秒
+        const dateStr = allDatesInPeriod[i];
+        const d = new Date(dateStr);
+        const dayStartMs = new Date(d.setHours(0,0,0,0)).getTime();
 
-        let cyclesForCurrentRowPerson1 = [];
-        let cyclesForCurrentRowPerson2 = [];
+        const rowStartMs = dayStartMs + DISPLAY_START_MINUTE_ABSOLUTE * 60 * 1000;
+        const rowEndMs   = dayStartMs + DISPLAY_END_MINUTE_ABSOLUTE   * 60 * 1000;
 
-        // 全ての睡眠サイクルをこの行の表示期間と照合
+        let p1 = [];
+        let p2 = [];
+
         for (const cycle of allSleepCyclesWithAbsoluteTime) {
-            // 睡眠サイクルと現在の行の表示期間との重なりをチェック
-            // 睡眠サイクルが現在の行の期間に少しでも重なっていれば追加
-            if (!(cycle.wakeEndMs <= rowDisplayStartMs || cycle.sleepStartMs >= rowDisplayEndMs)) {
-                // 重なっている場合は、この行に割り当てられたデータとして追加
-                if (cycle.person === 1) {
-                    cyclesForCurrentRowPerson1.push(cycle);
-                } else if (cycle.person === 2) {
-                    cyclesForCurrentRowPerson2.push(cycle);
-                }
+
+            // ★ 睡眠の開始時点がこの期間と重なっている cycle をだけ「この日の描画対象」とする
+            const overlaps =
+                (rowStartMs <= cycle.sleepStartMs && cycle.sleepStartMs < rowEndMs);
+
+            if (overlaps) {
+                if (cycle.person === 1) p1.push(cycle);
+                else p2.push(cycle);
             }
         }
 
-        cyclesToDrawPerDay[displayDateStr] = {
-            person1: cyclesForCurrentRowPerson1,
-            person2: cyclesForCurrentRowPerson2
-        };
+        cyclesToDrawPerDay[dateStr] = { person1: p1, person2: p2 };
     }
 }
+
+
 
 /**
  * 各日の背景色（記録なし）と睡眠サイクルを描画する関数
@@ -753,9 +731,10 @@ function drawDateRows() {
         //     const eventMainTextX = eventTextX + textWidth(EVENT_TEXT_PREFIX);
         //     text(eventData[currentDisplayDateStr], eventMainTextX, eventTextY, EVENT_TEXT_WIDTH - 20);
         // }
-        
+
         // --- 睡眠データの描画呼び出し ---
         const dataForThisRow = cyclesToDrawPerDay[currentDisplayDateStr];
+        console.log(dataForThisRow)
         if (!dataForThisRow) {
             console.warn(`No pre-calculated sleep data for ${currentDisplayDateStr}. This should not happen if prepareSleepCyclesForDrawing is called correctly.`);
             continue; 
@@ -991,105 +970,194 @@ let PARAMS = {
     baseRadius: 60,     // 螺旋の開始半径（真ん中の空洞の大きさ）
     ringSpacing: 1,    // 1日ごとのリングの間隔（旧 ROW_HEIGHT）
     strokeWeight: 1,    // 線の太さ
-    dotSize: 1        // ドットのサイズ
+    dotSize: 2        // ドットのサイズ
 };
 
 /**
  * 螺旋状に睡眠サイクルを描画する関数
  */
+function drawSleepWakeCyclesSpiral(cycles, _color, dateStr, dayIndex) {
+    if (!cycles || cycles.length === 0) return;
 
-function drawSleepWakeCyclesSpiral(cycles, maxSleepHoursOfDay, displayDateStr, currentColumnIndex) {
-    // ==========================================
-    // 追加：色を最長睡眠時間から算出する
-    // ==========================================
-    // 設定する色（必要なら調整）
-    const colorRed = color(255, 80, 80);   // 最長睡眠が短い（しんどい）
-    const colorBlue = color(80, 120, 255); // よく眠れた日
-
-    // maxSleepHoursOfDay を 0〜10 時間の範囲と仮定（必要に応じて変更）
+    const colorRed = color(255, 80, 80);
+    const colorBlue = color(80, 120, 255);
     const MAX_POSSIBLE_HOURS = 10;
 
     let maxHours = 0;
-
+    console.log(cycles)
     cycles.forEach(cycle => {
-      const hours = (cycle.wakeEndMs - cycle.sleepStartMs) / (1000 * 60 * 60);
-      if (hours > maxHours) maxHours = hours;
+
+        const hours = (cycle.wakeEndMs - cycle.sleepStartMs) / (1000 * 60 * 60);
+        if (hours > maxHours) maxHours = hours;
     });
 
-    console.log(maxHours)
-    // 正規化（0 = 赤、1 = 青）
     let t = constrain(maxHours / MAX_POSSIBLE_HOURS, 0, 1);
-
-    // 色補間
     let colorVal = lerpColor(colorRed, colorBlue, t);
 
-    // ==========================================
-    // 元の描画処理
-    // ==========================================
+    const d = new Date(dateStr);
+    const dayStartMs = new Date(d.setHours(0, 0, 0, 0)).getTime();
+    const dayEndMs = dayStartMs + 24 * 60 * 60 * 1000;
 
-    const cx = width / 2;
-    const cy = height / 2;
+    const centerX = width / 2;
+    const centerY = height / 2;
 
-    const currentRadius = PARAMS.baseRadius + (currentColumnIndex * PARAMS.ringSpacing);
+    const baseR = PARAMS.baseRadius;
 
-    if (!cycles || cycles.length === 0) return;
+    // ▼0:00の半径
+    const rStart = baseR + dayIndex * PARAMS.ringSpacing;
+    // ▼翌日0:00の半径
+    const rEnd = baseR + (dayIndex + 1) * PARAMS.ringSpacing;
+    const radiusDelta = rEnd - rStart;
 
-    const currentDisplayDateObj = new Date(displayDateStr);
+    strokeWeight(PARAMS.strokeWeight);
 
-    const rowDisplayStartMs = currentDisplayDateObj.getTime() + DISPLAY_START_MINUTE_ABSOLUTE * 60 * 1000;
-    const rowDisplayEndMs = currentDisplayDateObj.getTime() + DISPLAY_END_MINUTE_ABSOLUTE * 60 * 1000;
-    const totalDisplayMinutes = DISPLAY_END_MINUTE_ABSOLUTE - DISPLAY_START_MINUTE_ABSOLUTE;
-
+    // ms → 0〜TWO_PI
+    const msToAngle = (ms) => ((ms - dayStartMs) / (24 * 60 * 60 * 1000)) * TWO_PI;
     const ANGLE_OFFSET = -HALF_PI;
 
-    for (const cycle of cycles) {
-        const sleepStartMs = cycle.sleepStartMs;
-        const wakeEndMs = cycle.wakeEndMs;
+    // 時刻 → 半径（0:00 → 1.0 → 24:00）
+    const msToRadius = (ms) => {
+        const f = (ms - dayStartMs) / (24 * 60 * 60 * 1000); // 0〜1
+        return rStart + radiusDelta * f;
+    };
 
-        const intersectionStartMs = max(sleepStartMs, rowDisplayStartMs);
-        const intersectionEndMs = min(wakeEndMs, rowDisplayEndMs);
+    for (const c of cycles) {
+        // const segStart = Math.max(c.sleepStartMs, dayStartMs);
+        // const segEnd = Math.min(c.wakeEndMs, dayEndMs);
+        const segStart =c.sleepStartMs;
+        const segEnd = c.wakeEndMs;
+        if (segEnd <= segStart) continue;
 
-        if (intersectionStartMs >= intersectionEndMs) continue;
-
-        const relativeStartMins = (intersectionStartMs - rowDisplayStartMs) / (60 * 1000);
-        const relativeEndMins = (intersectionEndMs - rowDisplayStartMs) / (60 * 1000);
-
-        let startAngle = map(relativeStartMins, 0, totalDisplayMinutes, 0, TWO_PI) + ANGLE_OFFSET;
-        let endAngle = map(relativeEndMins, 0, totalDisplayMinutes, 0, TWO_PI) + ANGLE_OFFSET;
+        const startA = msToAngle(segStart) + ANGLE_OFFSET;
+        const endA = msToAngle(segEnd) + ANGLE_OFFSET;
 
         stroke(colorVal);
-        strokeWeight(PARAMS.strokeWeight);
         noFill();
-        strokeCap(ROUND);
 
-        arc(cx, cy, currentRadius * 2, currentRadius * 2, startAngle, endAngle);
+        const steps = 60;
+        const da = (endA - startA) / steps;
+        const dms = (segEnd - segStart) / steps;
 
-        fill(colorVal);
-        noStroke();
+        beginShape();
+        for (let i = 0; i <= steps; i++) {
+            const ms = segStart + dms * i;       // この頂点の時刻
+            const a = startA + da * i;           // この頂点の角度
+            const rr = msToRadius(ms);           // ★この頂点の半径（線形増加）
 
-        // 開始ドット
-        if (intersectionStartMs === sleepStartMs) {
-            let sx = cx + cos(startAngle) * currentRadius;
-            let sy = cy + sin(startAngle) * currentRadius;
-            ellipse(sx, sy, PARAMS.dotSize, PARAMS.dotSize);
+            const x = centerX + rr * cos(a);
+            const y = centerY + rr * sin(a);
 
-            if (SHOW_TIME_TEXT) {
-                drawRadialText(cycle.sleep, startAngle, currentRadius, cx, cy, "start");
-            }
+            vertex(x, y);
         }
-
-        // 終了ドット
-        if (intersectionEndMs === wakeEndMs) {
-            let ex = cx + cos(endAngle) * currentRadius;
-            let ey = cy + sin(endAngle) * currentRadius;
-            ellipse(ex, ey, PARAMS.dotSize, PARAMS.dotSize);
-
-            if (SHOW_TIME_TEXT) {
-                drawRadialText(cycle.wake, endAngle, currentRadius, cx, cy, "end");
-            }
-        }
+        endShape();
     }
 }
+
+
+
+// function drawSleepWakeCyclesSpiral(cycles, maxSleepHoursOfDay, displayDateStr, currentColumnIndex) {
+//     // ==========================================
+//     // 追加：色を最長睡眠時間から算出する
+//     // ==========================================
+//     // 設定する色（必要なら調整）
+//     const colorRed = color(255, 80, 80);   // 最長睡眠が短い（しんどい）
+//     const colorBlue = color(80, 120, 255); // よく眠れた日
+
+//     // maxSleepHoursOfDay を 0〜10 時間の範囲と仮定（必要に応じて変更）
+//     const MAX_POSSIBLE_HOURS = 10;
+
+//     let maxHours = 0;
+
+//     cycles.forEach(cycle => {
+//       const hours = (cycle.wakeEndMs - cycle.sleepStartMs) / (1000 * 60 * 60);
+//       if (hours > maxHours) maxHours = hours;
+//     });
+
+//     console.log(cycles)
+//     // 正規化（0 = 赤、1 = 青）
+//     let t = constrain(maxHours / MAX_POSSIBLE_HOURS, 0, 1);
+
+//     // 色補間
+//     let colorVal = lerpColor(colorRed, colorBlue, t);
+
+//     // ==============================
+//     // ここからが重要：時間による半径増加
+//     // ==============================
+
+//     const cx = width / 2;
+//     const cy = height / 2;
+
+//     // 「その日の0:00 の基準半径」
+//     const baseRadiusForDay = PARAMS.baseRadius + (currentColumnIndex * PARAMS.ringSpacing);
+
+//     // 半径増加量（1日＝1440分）
+//     const radiusGrowthPerMinute = PARAMS.ringSpacing / 1440;
+
+//     if (!cycles || cycles.length === 0) return;
+
+//     const currentDisplayDateObj = new Date(displayDateStr);
+
+//     const rowDisplayStartMs = currentDisplayDateObj.getTime() + DISPLAY_START_MINUTE_ABSOLUTE * 60 * 1000;
+//     const rowDisplayEndMs   = currentDisplayDateObj.getTime() + DISPLAY_END_MINUTE_ABSOLUTE   * 60 * 1000;
+//     const totalDisplayMinutes = DISPLAY_END_MINUTE_ABSOLUTE - DISPLAY_START_MINUTE_ABSOLUTE;
+
+//     const ANGLE_OFFSET = -HALF_PI;
+
+//     for (const cycle of cycles) {
+//         const sleepStartMs = cycle.sleepStartMs;
+//         const wakeEndMs = cycle.wakeEndMs;
+
+//         const intersectionStartMs = max(sleepStartMs, rowDisplayStartMs);
+//         const intersectionEndMs   = min(wakeEndMs, rowDisplayEndMs);
+
+//         if (intersectionStartMs >= intersectionEndMs) continue;
+
+//         const relativeStartMins = (intersectionStartMs - rowDisplayStartMs) / (1000 * 60);
+//         const relativeEndMins   = (intersectionEndMs   - rowDisplayStartMs) / (1000 * 60);
+
+//         let startAngle = map(relativeStartMins, 0, totalDisplayMinutes, 0, TWO_PI) + ANGLE_OFFSET;
+//         let endAngle   = map(relativeEndMins,   0, totalDisplayMinutes, 0, TWO_PI) + ANGLE_OFFSET;
+
+//         // ★ 新：半径は「時間に応じて増える」
+//         let startRadius = baseRadiusForDay + (relativeStartMins * radiusGrowthPerMinute);
+//         let endRadius   = baseRadiusForDay + (relativeEndMins   * radiusGrowthPerMinute);
+
+//         // arc は w,h に直径が必要 → 半径×2
+//         stroke(colorVal);
+//         strokeWeight(PARAMS.strokeWeight);
+//         noFill();
+//         strokeCap(ROUND);
+
+//         // **開始時点の半径で円弧を描く**
+//         arc(cx, cy, startRadius * 2, startRadius * 2, startAngle, endAngle);
+
+//         // ==============================
+//         // ドット描画
+//         // ==============================
+//         fill(colorVal);
+//         noStroke();
+
+//         if (intersectionStartMs === sleepStartMs) {
+//             let sx = cx + cos(startAngle) * startRadius;
+//             let sy = cy + sin(startAngle) * startRadius;
+//             ellipse(sx, sy, PARAMS.dotSize, PARAMS.dotSize);
+
+//             if (SHOW_TIME_TEXT) {
+//                 drawRadialText(cycle.sleep, startAngle, startRadius, cx, cy, "start");
+//             }
+//         }
+
+//         if (intersectionEndMs === wakeEndMs) {
+//             let ex = cx + cos(endAngle) * endRadius;
+//             let ey = cy + sin(endAngle) * endRadius;
+//             ellipse(ex, ey, PARAMS.dotSize, PARAMS.dotSize);
+
+//             if (SHOW_TIME_TEXT) {
+//                 drawRadialText(cycle.wake, endAngle, endRadius, cx, cy, "end");
+//             }
+//         }
+//     }
+// }
 
 
 /**
