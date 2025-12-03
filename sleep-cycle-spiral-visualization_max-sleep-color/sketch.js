@@ -17,6 +17,13 @@ let TIME_AXIS_COLOR;
 let TEXT_COLOR;
 let DOT_SIZE;
 
+// 【設定値】画面上のUIで変更したいパラメータ（Tweakpane等で操作可能にする想定）
+let PARAMS = {
+    baseRadius: 60,     // 螺旋の開始半径（真ん中の空洞の大きさ）
+    ringSpacing: 1,    // 1日ごとのリングの間隔（旧 ROW_HEIGHT）
+    strokeWeight: 1,    // 線の太さ
+};
+
 let DAY_BG_COLOR;
 let NIGHT_BG_COLOR;
 // let NO_RECORD_DAY_BG_COLOR; // 記録なし日の背景色
@@ -90,7 +97,7 @@ const LEGEND_TEXT_OFFSET = 5;
  */
 function preload() {
     // sleepData1の読み込み
-    loadJSON('../data/sleep_wake_data_test.json', (data) => {
+    loadJSON('../data/sleep_wake_data.json', (data) => {
       sleepData1 = data;
       // sleepData2も読み込まれているかチェックしてから日付計算を呼び出す
       if (sleepData2) { // sleepData2が先に読み込まれている場合
@@ -174,7 +181,6 @@ function setup() {
   toggleButton.mousePressed(toggleControlsPanel); // クリックイベントを設定
 
   background(255);
-//   angleMode(DEGREES);
 
   // --- UI要素の参照とイベントリスナーの設定 ---
   startDatePicker = select('#startDatePicker');
@@ -289,31 +295,6 @@ function mouseClicked() {
         isPerson2Visible = !isPerson2Visible;
         redraw();
     }
-}
-
-
-/**
- * マウスが動いたときに呼び出されます
- */
-function mouseMoved() {
-    // // 凡例のホバー判定
-    // const legendX = MARGIN_LEFT;
-    // const legendY = MARGIN_TOP / 2 - LEGEND_BOX_SIZE/2; // Y座標を調整
-    // const person1LegendX = legendX;
-    // const person2LegendX = legendX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth('mom') + 40;
-
-    // let newHoveredItem = null;
-    // if (mouseX >= person1LegendX && mouseX <= person1LegendX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth('mom') + 40 && mouseY >= legendY && mouseY <= legendY + LEGEND_BOX_SIZE) {
-    //     newHoveredItem = 'person1';
-    // } else if (mouseX >= person2LegendX && mouseX <= person2LegendX + LEGEND_BOX_SIZE + LEGEND_TEXT_OFFSET + textWidth('child') + 40 && mouseY >= legendY && mouseY <= legendY + LEGEND_BOX_SIZE) {
-    //     newHoveredItem = 'person2';
-    // }
-
-    // // ホバー状態が変化した場合のみ再描画
-    // if (newHoveredItem !== hoveredLegendItem) {
-    //     hoveredLegendItem = newHoveredItem;
-    //     redraw();
-    // }
 }
 
 
@@ -452,44 +433,8 @@ function updateVisualization() {
  */
 function draw() {
     background(CANVAS_BG_COLOR); // キャンバス全体の背景色を設定
-  drawBackgrounds(); // 全体背景の描画を分離
   drawDateRows();
-  drawTimeAxis();
-  drawZeroOClockGuideLine();
   drawLegend(); // 凡例の描画を呼び出し
-}
-
-/**
- * 全体の夜間・日中背景を描画する関数 (7:00-翌7:00基準)
- */
-function drawBackgrounds() {
-    // 表示範囲は常に 7:00 から 翌日 7:00 (24時間)
-    const displayStartMinute = DISPLAY_START_MINUTE_ABSOLUTE; 
-    const displayEndMinute = DISPLAY_END_MINUTE_ABSOLUTE; 
-
-    // 日中と夜間の境界 (0:00基準の絶対分数)
-    const dayStartAbsoluteMinute = 7 * 60;  // 0:00
-    const dayEndAbsoluteMinute = 19 * 60;   // 24:00
-    
-    const totalVisualizationHeight = allDatesInPeriod.length * (ROW_HEIGHT + ROW_GAP) - (allDatesInPeriod.length > 0 ? ROW_GAP : 0); 
-    
-    noStroke();
-    //背景の塗りは一旦なし 11/29
-    // // 日中背景（7:00 - 19:00）
-    // const dayBgStartX = map(dayStartAbsoluteMinute, displayStartMinute, displayEndMinute, MARGIN_LEFT, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT);
-    // const dayBgEndX = map(dayEndAbsoluteMinute, displayStartMinute, displayEndMinute, MARGIN_LEFT, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT);
-    
-    // fill(DAY_BG_COLOR);
-    // rect(dayBgStartX, MARGIN_TOP, dayBgEndX - dayBgStartX, totalVisualizationHeight);
-
-    // 夜間背景
-    // fill(NIGHT_BG_COLOR);
-    
-    // // Part 1: その日の日中の終了 (19:00) から翌日の日中の開始 (翌7:00) まで
-    // // これは 19:00 から翌日 7:00 までが夜間
-    // const nightPart2StartX = map(dayEndAbsoluteMinute, displayStartMinute, displayEndMinute, MARGIN_LEFT, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT);
-    // const nightPart2EndX = map(DISPLAY_END_MINUTE_ABSOLUTE, displayStartMinute, displayEndMinute, MARGIN_LEFT, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT);
-    // rect(nightPart2StartX, MARGIN_TOP, nightPart2EndX - nightPart2StartX, totalVisualizationHeight);
 }
 
 
@@ -505,12 +450,9 @@ function hasDataEntryForPerson(data, date) {
 
 /**
  * 各日の睡眠・起床サイクルを描画するデータを事前に準備する関数
- * この関数は、allDatesInPeriod内の各日付に対して、その行に描画されるべき睡眠サイクルを計算し、cyclesToDrawPerDayに格納します。
+ * この関数は、allDatesInPeriod内の各日付に対して、その1周に描画されるべき睡眠サイクルを計算し、cyclesToDrawPerDayに格納します。
  */
-/**
- * スパイラル用に、睡眠開始日のみにサイクルを持たせ、
- * 日またぎ睡眠を翌日に複製しないように修正したバージョン
- */
+
 function prepareSleepCyclesForDrawing() {
     cyclesToDrawPerDay = {}; 
 
@@ -526,7 +468,6 @@ function prepareSleepCyclesForDrawing() {
     // sleepDataX を絶対時刻化して1本の配列にする
     // --------------------------------------------------------------------
     function appendCyclesFromData(sleepData, personId) {
-        console.log(sleepData)
         for (const dateKey in sleepData) {
             if (!hasDataEntryForPerson(sleepData, dateKey)) continue;
 
@@ -584,9 +525,8 @@ function prepareSleepCyclesForDrawing() {
     appendCyclesFromData(sleepData1, 1);
     appendCyclesFromData(sleepData2, 2);
 
-    console.log(allSleepCyclesWithAbsoluteTime)
     // --------------------------------------------------------------------
-    // 1日のリングに対し、重なっている cycle を割り当てる（描画用）
+    // 1日のリング（7時から翌7時で1周）に対し、睡眠の開始時間が重なっている cycle を割り当てる（描画用）
     // --------------------------------------------------------------------
     for (let i = 0; i < allDatesInPeriod.length; i++) {
 
@@ -639,102 +579,10 @@ function drawDateRows() {
 
     for (let i = 0; i < allDatesInPeriod.length; i++) {
         const currentDisplayDateStr = allDatesInPeriod[i];
-        const currentYBase = MARGIN_TOP + (i * (ROW_HEIGHT + ROW_GAP));
-        
-        const currentDisplayDateObj = new Date(currentDisplayDateStr);
-        const currentDisplayDateMs = new Date(currentDisplayDateObj.getFullYear(), currentDisplayDateObj.getMonth(), currentDisplayDateObj.getDate()).getTime();
-        
-        const oneDay = 1000 * 60 * 60 * 24;
-        const pregnancyStartDate = new Date(PREGNANCY_START_DATE);
-        const currentDate = new Date(currentDisplayDateStr);
-        const childBirthDate = childBirthDatePicker.value() ? new Date(childBirthDatePicker.value()) : null;
-
-        let displayDateText = '';
-
-        if (childBirthDate && currentDate.toDateString() === childBirthDate.toDateString()) {
-            displayDateText = `Birth Date`;
-        } else if (childBirthDate && currentDate.getTime() < childBirthDate.getTime()) {
-            const daysPregnant = Math.floor((currentDate.getTime() - pregnancyStartDate.getTime()) / oneDay);
-            const months = Math.floor(daysPregnant / 30.44);
-            const days = daysPregnant % 30.44; 
-            
-            if (daysPregnant >= 0 && daysPregnant < 1) {
-                displayDateText = `0 mo.`;
-            } else if (Math.abs(days) < 1) {
-                displayDateText = `${months} mo.`;
-            }
-        } else if (childBirthDate && currentDate.getTime() > childBirthDate.getTime()) {
-            const daysSinceBirth = Math.floor((currentDate.getTime() - childBirthDate.getTime()) / oneDay);
-            const months = Math.floor(daysSinceBirth / 30.44);
-            const days = daysSinceBirth % 30.44;
-
-            if (Math.abs(days) < 1) {
-                displayDateText = `${months} mo. old`;
-            }
-        } else {
-            displayDateText = `${currentDate.getMonth() + 1}/${currentDate.getDate()}`;
-        }
-        
-        // --- 各個人の記録なし背景を描画 ---
-        // Person 1 (母) の記録なし背景
-        const hasDataEntry1ForCurrentDate = hasDataEntryForPerson(sleepData1, currentDisplayDateStr);
-        if (!hasDataEntry1ForCurrentDate) { 
-            noFill();
-            stroke(NO_RECORD_DAY_BG_COLOR1); 
-            strokeWeight(1);
-            
-            const rectX = MARGIN_LEFT;
-            const rectY = currentYBase; // Person 1 のハッチングも同じY座標
-            const rectW = width - MARGIN_LEFT - EVENT_TEXT_WIDTH - MARGIN_RIGHT;
-            const rectH = ROW_HEIGHT; // ハッチングの高さをROW_HEIGHT全体に
-            const lineSpacing = 4;
-            for (let x = rectX - rectH; x < rectX + rectW + rectH; x += lineSpacing) {
-                line(x, rectY, x + rectH, rectY + rectH);
-            }
-        }
-
-        // Person 2 (子供) の記録なし背景
-        const hasDataEntry2ForCurrentDate = hasDataEntryForPerson(sleepData2, currentDisplayDateStr);
-        if (!hasDataEntry2ForCurrentDate && (childBirthDateMs === 0 || currentDisplayDateMs >= childBirthDateMs)) { 
-            noFill();
-            stroke(NO_RECORD_DAY_BG_COLOR2); 
-            strokeWeight(1);
-            
-            const rectX = MARGIN_LEFT;
-            const rectY = currentYBase; // Person 2 のハッチングも同じY座標
-            const rectW = width - MARGIN_LEFT - EVENT_TEXT_WIDTH - MARGIN_RIGHT;
-            const rectH = ROW_HEIGHT; // ハッチングの高さをROW_HEIGHT全体に
-            const lineSpacing = 4;
-            const offset = lineSpacing / 2;
-
-            for (let x = rectX - rectH - offset; x < rectX + rectW + rectH; x += lineSpacing) {
-                line(x, rectY, x + rectH, rectY + rectH);
-            }
-        }
-        
-        noStroke();
-        fill(TEXT_COLOR);
-        textSize(12);
-        textAlign(RIGHT, CENTER);
-        text(displayDateText, MARGIN_LEFT - 10, currentYBase + ROW_HEIGHT / 2);
-
-        const visualizationRightX = width - EVENT_TEXT_WIDTH - MARGIN_RIGHT;
-
-        // if (eventData && eventData[currentDisplayDateStr]) {
-        //     noStroke();
-        //     fill(TEXT_COLOR);
-        //     textSize(12);
-        //     textAlign(LEFT, CENTER);
-        //     const eventTextX = visualizationRightX ;
-        //     const eventTextY = currentYBase + ROW_HEIGHT / 2;
-        //     text(EVENT_TEXT_PREFIX, eventTextX, eventTextY);
-        //     const eventMainTextX = eventTextX + textWidth(EVENT_TEXT_PREFIX);
-        //     text(eventData[currentDisplayDateStr], eventMainTextX, eventTextY, EVENT_TEXT_WIDTH - 20);
-        // }
+        // const currentYBase = MARGIN_TOP + (i * (ROW_HEIGHT + ROW_GAP));
 
         // --- 睡眠データの描画呼び出し ---
         const dataForThisRow = cyclesToDrawPerDay[currentDisplayDateStr];
-        console.log(dataForThisRow)
         if (!dataForThisRow) {
             console.warn(`No pre-calculated sleep data for ${currentDisplayDateStr}. This should not happen if prepareSleepCyclesForDrawing is called correctly.`);
             continue; 
@@ -743,7 +591,7 @@ function drawDateRows() {
         // 凡例の状態に基づいて描画を呼び出す
         if (isPerson1Visible) {
             // Y座標を統一
-            drawSleepWakeCyclesSpiral(dataForThisRow.person1, Math.random()*10,  currentDisplayDateStr,  i);
+            drawSleepWakeCyclesSpiral(dataForThisRow.person1, currentDisplayDateStr,  i);
         }
         if (isPerson2Visible) {
             // Y座標を統一
@@ -813,78 +661,7 @@ function getDisplayColor(personId, originalColor) {
     return originalColor;
 }
 
-function drawTimeAxis() {
-    stroke(TIME_AXIS_COLOR);
-    strokeWeight(1);
-    line(MARGIN_LEFT, MARGIN_TOP, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT, MARGIN_TOP);
 
-    fill(TEXT_COLOR);
-    textSize(12);
-    textAlign(CENTER, BOTTOM);
-
-    // 描画したい時刻を0:00からの絶対分数で定義
-    const timesToDraw = [
-        { hour: 7, text: '07:00' },
-        { hour: 12, text: '12:00' },
-        { hour: 19, text: '19:00' },
-        { hour: 24, text: '00:00 (+1d)' }, // 翌日0:00
-        { hour: 31, text: '07:00 (+1d)' } // 翌日7:00
-    ];
-
-    // 表示範囲は 0:00 から翌日 0:00
-    const displayStartMinute = DISPLAY_START_HOUR * 60;
-    const displayEndMinute = DISPLAY_END_HOUR * 60;
-
-    for (const time of timesToDraw) {
-        // 時刻を絶対分数に変換
-        const currentMinuteAbsolute = time.hour * 60;
-
-        // X座標を計算
-        const x = map(currentMinuteAbsolute, displayStartMinute, displayEndMinute, MARGIN_LEFT, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT);
-
-        // 目盛り線の描画
-        line(x, MARGIN_TOP - 5, x, MARGIN_TOP);
-
-        // ラベルテキストの描画
-        noStroke(); 
-        text(time.text, x, MARGIN_TOP - TEXT_OFFSET_Y * 3);
-    }
-}
-
-/**
- * 0:00 の位置に垂直の補助線を描画します。 (新しい時間軸では左端から24-7=17時間後の位置)
- * ただし、ユーザーの要望として「0時補助線は残す」とあるため、新しい時間軸（7時から翌7時）における0時の位置に補助線を描画します。
- * 0時は、表示開始時刻の7時から17時間後になります。
- */
-function drawZeroOClockGuideLine() {
-    // 表示範囲は 7:00 から翌日 7:00
-    const displayStartMinute = DISPLAY_START_MINUTE_ABSOLUTE; 
-    const displayEndMinute = DISPLAY_END_MINUTE_ABSOLUTE; 
-
-    // 翌日の0:00を表す絶対分数 (0:00基準)
-    const zeroOClockAbsoluteMinute = 24 * 60; 
-
-    // 新しい時間軸 (7:00-翌7:00) の中で、0:00 (翌日) の位置をマッピング
-    const zeroOClockX = map(
-        zeroOClockAbsoluteMinute, 
-        displayStartMinute,       
-        displayEndMinute,         
-        MARGIN_LEFT,              
-        width - EVENT_TEXT_WIDTH - MARGIN_RIGHT      
-    );
-
-    stroke(GUIDE_LINE_COLOR);
-    strokeWeight(GUIDE_LINE_WEIGHT);
-    
-    // 補助線が描画範囲内にあるかチェック
-    if (zeroOClockX > MARGIN_LEFT && zeroOClockX < width - EVENT_TEXT_WIDTH - MARGIN_RIGHT) {
-        line(zeroOClockX, MARGIN_TOP, zeroOClockX, height - MARGIN_BOTTOM);
-    }
-    const cx = width / 2;
-    const cy = height / 2;
-    line(cx,cy,cx,0);
-    line(cx,cy,cx*2,cy);
-}
 
 
 /**
@@ -896,95 +673,21 @@ function drawZeroOClockGuideLine() {
  * @param {number} currentColumnYBase - 現在描画している列の基準Y座標
  * @param {number} currentColumnIndex - allDatesInPeriodにおける現在の描画列のインデックス
  */
-function drawSleepWakeCycles(cycles, color, yBase, displayDateStr, currentColumnYBase, currentColumnIndex) {
-    const sleepLineCenterY = yBase + (ROW_HEIGHT / 2); // Person1とPerson2を同じY座標に描画
 
-    if (!cycles || cycles.length === 0) return;
 
-    const currentDisplayDateObj = new Date(displayDateStr);
-    const rowDisplayStartMs = currentDisplayDateObj.getTime() + DISPLAY_START_MINUTE_ABSOLUTE * 60 * 1000;
-    const rowDisplayEndMs = currentDisplayDateObj.getTime() + DISPLAY_END_MINUTE_ABSOLUTE * 60 * 1000; // 翌日7時の絶対ミリ秒
 
-    const totalDisplayMinutes = DISPLAY_END_MINUTE_ABSOLUTE - DISPLAY_START_MINUTE_ABSOLUTE;
-
-    for (const cycle of cycles) {
-        // prepareSleepCyclesForDrawing で計算済みの絶対時刻を使用
-        const sleepStartMs = cycle.sleepStartMs;
-        const wakeEndMs = cycle.wakeEndMs;
-
-        // このサイクルが現在の行の表示期間と重なっている部分を計算
-        // ここが重要：描画される範囲を現在の行の期間に限定する
-        const intersectionStartMs = max(sleepStartMs, rowDisplayStartMs);
-        const intersectionEndMs = min(wakeEndMs, rowDisplayEndMs); 
-
-        // 重なりがない場合は描画しない (理論上はprepareSleepCyclesForDrawingでフィルタリング済みだが、念のため)
-        if (intersectionStartMs >= intersectionEndMs) {
-            continue;
-        }
-
-        // 行の表示開始時刻を0分とした相対的な開始・終了分数を計算
-        const relativePlotStartMinutes = (intersectionStartMs - rowDisplayStartMs) / (60 * 1000);
-        const relativePlotEndMinutes = (intersectionEndMs - rowDisplayStartMs) / (60 * 1000);
-        
-        const partStartX = map(relativePlotStartMinutes, 0, totalDisplayMinutes, MARGIN_LEFT, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT);
-        const partEndX = map(relativePlotEndMinutes, 0, totalDisplayMinutes, MARGIN_LEFT, width - EVENT_TEXT_WIDTH - MARGIN_RIGHT);
-
-        stroke(color);
-        strokeWeight(SLEEP_LINE_WEIGHT);
-        line(partStartX, sleepLineCenterY, partEndX, sleepLineCenterY);
-
-        fill(color);
-        noStroke();
-
-        // ドットとテキストの描画条件: 実際の睡眠開始/起床終了がこの行の表示期間に入っているかどうか
-        // intersectionStartMs === sleepStartMs は、この部分がその睡眠サイクルの「本当の開始点」であり、かつこの行の表示範囲内である場合にのみtrue
-        if (intersectionStartMs === sleepStartMs) {
-            ellipse(partStartX, sleepLineCenterY, DOT_SIZE, DOT_SIZE);
-        }
-        
-        if (intersectionEndMs === wakeEndMs) {
-            ellipse(partEndX, sleepLineCenterY, DOT_SIZE, DOT_SIZE);
-        }
-
-        if (SHOW_TIME_TEXT) {
-            fill(TEXT_COLOR);
-            textSize(10);
-            
-            // 睡眠開始時刻テキスト
-            if (intersectionStartMs === sleepStartMs) {
-                textAlign(CENTER, BOTTOM);
-                text(cycle.sleep, partStartX, sleepLineCenterY - (SLEEP_LINE_WEIGHT / 2) - TEXT_OFFSET_Y);
-            }
-
-            // 起床時刻テキスト
-            if (intersectionEndMs === wakeEndMs) {
-                textAlign(CENTER, TOP);
-                text(cycle.wake, partEndX, sleepLineCenterY + (SLEEP_LINE_WEIGHT / 2) + TEXT_OFFSET_Y);
-            }
-        }
-    }
-}
-
-// 【設定値】画面上のUIで変更したいパラメータ（Tweakpane等で操作可能にする想定）
-let PARAMS = {
-    baseRadius: 60,     // 螺旋の開始半径（真ん中の空洞の大きさ）
-    ringSpacing: 1,    // 1日ごとのリングの間隔（旧 ROW_HEIGHT）
-    strokeWeight: 1,    // 線の太さ
-    dotSize: 2        // ドットのサイズ
-};
 
 /**
  * 螺旋状に睡眠サイクルを描画する関数
  */
-function drawSleepWakeCyclesSpiral(cycles, _color, dateStr, dayIndex) {
+function drawSleepWakeCyclesSpiral(cycles, dateStr, dayIndex) {
     if (!cycles || cycles.length === 0) return;
 
     const colorRed = color(255, 80, 80);
     const colorBlue = color(80, 120, 255);
-    const MAX_POSSIBLE_HOURS = 10;
+    const MAX_POSSIBLE_HOURS = 7;
 
     let maxHours = 0;
-    console.log(cycles)
     cycles.forEach(cycle => {
 
         const hours = (cycle.wakeEndMs - cycle.sleepStartMs) / (1000 * 60 * 60);
@@ -1053,111 +756,6 @@ function drawSleepWakeCyclesSpiral(cycles, _color, dateStr, dayIndex) {
     }
 }
 
-
-
-// function drawSleepWakeCyclesSpiral(cycles, maxSleepHoursOfDay, displayDateStr, currentColumnIndex) {
-//     // ==========================================
-//     // 追加：色を最長睡眠時間から算出する
-//     // ==========================================
-//     // 設定する色（必要なら調整）
-//     const colorRed = color(255, 80, 80);   // 最長睡眠が短い（しんどい）
-//     const colorBlue = color(80, 120, 255); // よく眠れた日
-
-//     // maxSleepHoursOfDay を 0〜10 時間の範囲と仮定（必要に応じて変更）
-//     const MAX_POSSIBLE_HOURS = 10;
-
-//     let maxHours = 0;
-
-//     cycles.forEach(cycle => {
-//       const hours = (cycle.wakeEndMs - cycle.sleepStartMs) / (1000 * 60 * 60);
-//       if (hours > maxHours) maxHours = hours;
-//     });
-
-//     console.log(cycles)
-//     // 正規化（0 = 赤、1 = 青）
-//     let t = constrain(maxHours / MAX_POSSIBLE_HOURS, 0, 1);
-
-//     // 色補間
-//     let colorVal = lerpColor(colorRed, colorBlue, t);
-
-//     // ==============================
-//     // ここからが重要：時間による半径増加
-//     // ==============================
-
-//     const cx = width / 2;
-//     const cy = height / 2;
-
-//     // 「その日の0:00 の基準半径」
-//     const baseRadiusForDay = PARAMS.baseRadius + (currentColumnIndex * PARAMS.ringSpacing);
-
-//     // 半径増加量（1日＝1440分）
-//     const radiusGrowthPerMinute = PARAMS.ringSpacing / 1440;
-
-//     if (!cycles || cycles.length === 0) return;
-
-//     const currentDisplayDateObj = new Date(displayDateStr);
-
-//     const rowDisplayStartMs = currentDisplayDateObj.getTime() + DISPLAY_START_MINUTE_ABSOLUTE * 60 * 1000;
-//     const rowDisplayEndMs   = currentDisplayDateObj.getTime() + DISPLAY_END_MINUTE_ABSOLUTE   * 60 * 1000;
-//     const totalDisplayMinutes = DISPLAY_END_MINUTE_ABSOLUTE - DISPLAY_START_MINUTE_ABSOLUTE;
-
-//     const ANGLE_OFFSET = -HALF_PI;
-
-//     for (const cycle of cycles) {
-//         const sleepStartMs = cycle.sleepStartMs;
-//         const wakeEndMs = cycle.wakeEndMs;
-
-//         const intersectionStartMs = max(sleepStartMs, rowDisplayStartMs);
-//         const intersectionEndMs   = min(wakeEndMs, rowDisplayEndMs);
-
-//         if (intersectionStartMs >= intersectionEndMs) continue;
-
-//         const relativeStartMins = (intersectionStartMs - rowDisplayStartMs) / (1000 * 60);
-//         const relativeEndMins   = (intersectionEndMs   - rowDisplayStartMs) / (1000 * 60);
-
-//         let startAngle = map(relativeStartMins, 0, totalDisplayMinutes, 0, TWO_PI) + ANGLE_OFFSET;
-//         let endAngle   = map(relativeEndMins,   0, totalDisplayMinutes, 0, TWO_PI) + ANGLE_OFFSET;
-
-//         // ★ 新：半径は「時間に応じて増える」
-//         let startRadius = baseRadiusForDay + (relativeStartMins * radiusGrowthPerMinute);
-//         let endRadius   = baseRadiusForDay + (relativeEndMins   * radiusGrowthPerMinute);
-
-//         // arc は w,h に直径が必要 → 半径×2
-//         stroke(colorVal);
-//         strokeWeight(PARAMS.strokeWeight);
-//         noFill();
-//         strokeCap(ROUND);
-
-//         // **開始時点の半径で円弧を描く**
-//         arc(cx, cy, startRadius * 2, startRadius * 2, startAngle, endAngle);
-
-//         // ==============================
-//         // ドット描画
-//         // ==============================
-//         fill(colorVal);
-//         noStroke();
-
-//         if (intersectionStartMs === sleepStartMs) {
-//             let sx = cx + cos(startAngle) * startRadius;
-//             let sy = cy + sin(startAngle) * startRadius;
-//             ellipse(sx, sy, PARAMS.dotSize, PARAMS.dotSize);
-
-//             if (SHOW_TIME_TEXT) {
-//                 drawRadialText(cycle.sleep, startAngle, startRadius, cx, cy, "start");
-//             }
-//         }
-
-//         if (intersectionEndMs === wakeEndMs) {
-//             let ex = cx + cos(endAngle) * endRadius;
-//             let ey = cy + sin(endAngle) * endRadius;
-//             ellipse(ex, ey, PARAMS.dotSize, PARAMS.dotSize);
-
-//             if (SHOW_TIME_TEXT) {
-//                 drawRadialText(cycle.wake, endAngle, endRadius, cx, cy, "end");
-//             }
-//         }
-//     }
-// }
 
 
 /**
