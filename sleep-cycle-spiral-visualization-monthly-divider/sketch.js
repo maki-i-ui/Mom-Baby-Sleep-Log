@@ -19,7 +19,7 @@ let DOT_SIZE;
 
 // 【設定値】画面上のUIで変更したいパラメータ（Tweakpane等で操作可能にする想定）
 let PARAMS = {
-    baseRadius: 60,     // 螺旋の開始半径（真ん中の空洞の大きさ）
+    baseRadius: 10,     // 螺旋の開始半径（真ん中の空洞の大きさ）
     ringSpacing: 1,    // 1日ごとのリングの間隔（旧 ROW_HEIGHT）
     strokeWeight: 1,    // 線の太さ
 };
@@ -271,7 +271,65 @@ function setup() {
   generateAllDatesInPeriod(); 
   noLoop(); // draw() 関数は updateVisualization() でのみ呼び出されるようにする
 }
+function groupDatesByMonth(dateList) {
+    const map = {};
+  
+    dateList.forEach(d => {
+      const key = d.slice(0, 7); // "YYYY-MM"
+      if (!map[key]) map[key] = [];
+      map[key].push(d);
+    });
+  
+    return map; // 例: { "2024-10": [...dates], "2024-11": [...dates] }
+  }
+// g: createGraphics()で作ったもの
+// datesInMonth: その月の ["2024-10-01", "2024-10-02"...]
+function renderSpiralForMonth(g, datesInMonth) {
 
+    g.background(100);
+  
+    datesInMonth.forEach((dateStr, index) => {
+      const dayCycles = cyclesToDrawPerDay[dateStr] || { person1: [], person2: [] };
+  
+      drawSleepWakeCyclesSpiralOnGraphics(g, dayCycles.person1, SLEEP_COLOR1, dateStr, index);
+      drawSleepWakeCyclesSpiralOnGraphics(g, dayCycles.person2, SLEEP_COLOR2, dateStr, index);
+    });
+  }
+// function renderSpiralForMonth(g, datesInMonth) {
+
+//     g.background(100);
+  
+//     datesInMonth.forEach((dateStr, index) => {
+//       const cycles1 = sleepData1[dateStr] || [];
+//       const cycles2 = sleepData2[dateStr] || [];
+  
+//       drawSleepWakeCyclesSpiralOnGraphics(g, cycles1, SLEEP_COLOR1, dateStr, index);
+//       drawSleepWakeCyclesSpiralOnGraphics(g, cycles2, SLEEP_COLOR2, dateStr, index);
+//     });
+//   }  
+function renderAllMonths() {
+    const container = document.getElementById('monthly-spirals');
+    container.innerHTML = "";
+  
+    const grouped = groupDatesByMonth(allDatesInPeriod);
+    console.log(grouped)
+  
+    for (const month in grouped) {
+      const g = createGraphics(80, 80); // 好きなサイズ
+  
+      renderSpiralForMonth(g, grouped[month]);
+  
+      const imgURL = g.canvas.toDataURL();
+  
+      const div = document.createElement('div');
+      div.className = "month-container";
+      div.innerHTML = `
+         <h3>${month}</h3>
+         <img src="${imgURL}" />
+      `;
+      container.appendChild(div);
+    }
+  }
 /**
  * マウスがクリックされたときに呼び出されます
  */
@@ -426,6 +484,7 @@ function updateVisualization() {
 
   resizeCanvasBasedOnContent();
   redraw();
+  renderAllMonths();
 }
 
 /**
@@ -680,6 +739,89 @@ function getDisplayColor(personId, originalColor) {
 /**
  * 螺旋状に睡眠サイクルを描画する関数
  */
+
+function drawSleepWakeCyclesSpiralOnGraphics(g, cycles, col, dateStr, dayIndex) {
+
+
+    // あなたの元コードの描画部分を g.xxx に置き換えるだけ
+    // g.line(), g.beginShape(), g.vertex() など
+
+    if (!cycles || cycles.length === 0) return;
+
+    const colorRed = g.color(255, 80, 80);
+    const colorBlue = g.color(80, 120, 255);
+    const MAX_POSSIBLE_HOURS = 7;
+
+    let maxHours = 0;
+    cycles.forEach(cycle => {
+
+        const hours = (cycle.wakeEndMs - cycle.sleepStartMs) / (1000 * 60 * 60);
+        if (hours > maxHours) maxHours = hours;
+    });
+
+    let t = constrain(maxHours / MAX_POSSIBLE_HOURS, 0, 1);
+    let colorVal = lerpColor(colorRed, colorBlue, t);
+
+    const d = new Date(dateStr);
+    const dayStartMs = new Date(d.setHours(0, 0, 0, 0)).getTime();
+    const dayEndMs = dayStartMs + 24 * 60 * 60 * 1000;
+
+    const centerX = g.width / 2;
+    const centerY = g.height / 2;
+
+    const baseR = PARAMS.baseRadius;
+
+    // ▼0:00の半径
+    const rStart = baseR + dayIndex * PARAMS.ringSpacing;
+    // ▼翌日0:00の半径
+    const rEnd = baseR + (dayIndex + 1) * PARAMS.ringSpacing;
+    const radiusDelta = rEnd - rStart;
+
+    g.strokeWeight(PARAMS.strokeWeight);
+
+    // ms → 0〜TWO_PI
+    const msToAngle = (ms) => ((ms - dayStartMs) / (24 * 60 * 60 * 1000)) * TWO_PI;
+    const ANGLE_OFFSET = -HALF_PI;
+
+    // 時刻 → 半径（0:00 → 1.0 → 24:00）
+    const msToRadius = (ms) => {
+        const f = (ms - dayStartMs) / (24 * 60 * 60 * 1000); // 0〜1
+        return rStart + radiusDelta * f;
+    };
+    for (const c of cycles) {
+        // const segStart = Math.max(c.sleepStartMs, dayStartMs);
+        // const segEnd = Math.min(c.wakeEndMs, dayEndMs);
+        const segStart =c.sleepStartMs;
+  
+        const segEnd = c.wakeEndMs;
+        if (segEnd <= segStart) continue;
+
+        const startA = msToAngle(segStart) + ANGLE_OFFSET;
+        const endA = msToAngle(segEnd) + ANGLE_OFFSET;
+
+        g.stroke(colorVal);
+        g.noFill();
+
+        const steps = 60;
+        const da = (endA - startA) / steps;
+        const dms = (segEnd - segStart) / steps;
+    
+        g.beginShape();
+        for (let i = 0; i <= steps; i++) {
+            const ms = segStart + dms * i;       // この頂点の時刻
+            const a = startA + da * i;           // この頂点の角度
+            const rr = msToRadius(ms);           // ★この頂点の半径（線形増加）
+
+            const x = centerX + rr * cos(a);
+            const y = centerY + rr * sin(a);
+
+            g.vertex(x, y);
+            
+        }
+        g.endShape();
+
+    }
+}
 function drawSleepWakeCyclesSpiral(cycles, dateStr, dayIndex) {
     if (!cycles || cycles.length === 0) return;
 
