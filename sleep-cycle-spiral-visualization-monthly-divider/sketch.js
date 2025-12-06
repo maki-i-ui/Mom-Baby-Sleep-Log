@@ -135,7 +135,7 @@ function prepareSleepCyclesForDrawing() {
     let allSleepCyclesWithAbsoluteTime = [];
 
     // 出生日を ms に
-    const childBirthDateStr = childBirthDatePicker.value();
+    const childBirthDateStr = childBirthDatePicker.value;
     const childBirthDateMs = childBirthDateStr
         ? new Date(new Date(childBirthDateStr).setHours(0,0,0,0)).getTime()
         : 0;
@@ -236,8 +236,8 @@ function prepareSleepCyclesForDrawing() {
  * 指定された開始日から終了日までの全ての日付を生成し、allDatesInPeriodを更新する関数
  */
 function generateAllDatesInPeriod() {
-    const startDateStr = startDatePicker.value();
-    const endDateStr = endDatePicker.value();
+    const startDateStr = startDatePicker.value;
+    const endDateStr = endDatePicker.value;
 
     if (!startDateStr || !endDateStr) {
         console.warn("開始日と終了日を指定してください。");
@@ -421,103 +421,114 @@ function renderSpiralForMonth(g, datesInMonth) {
 /**
  * セットアップ関数: キャンバスの作成、UI要素の初期化、イベントリスナーの設定
  */
-function setup() {
-    
 
-  // --- UI要素の参照とイベントリスナーの設定 ---
-  toggleButton = select('#toggle-button');
-  controlsPanel = select('#controls');
-  toggleButton.mousePressed(toggleControlsPanel); // クリックイベントを設定
-
-
-  // --- UI要素の参照とイベントリスナーの設定 ---
-  startDatePicker = select('#startDatePicker');
-  endDatePicker = select('#endDatePicker');
-  applyDateRangeButton = select('#applyDateRangeButton');
-  applyDateRangeButton.mousePressed(generateAllDatesInPeriod); // ボタンクリックで日付範囲を生成・更新
-  childBirthDatePicker = select('#childBirthDatePicker'); // <-- 追加
-  childBirthDatePicker.input(generateAllDatesInPeriod); // 出生日変更時も再描画するように
+function setup() {  
+    toggleButton = document.querySelector('#toggle-button');
+    controlsPanel = document.querySelector('#controls');
+    toggleButton.addEventListener('click', toggleControlsPanel);
   
-  // データから計算した最小/最大日付を日付ピッカーの初期値に設定
-  if (minDateFromData && maxDateFromData) {
-    startDatePicker.value(minDateFromData);
-    endDatePicker.value(maxDateFromData);
-}
-  baseRadiusSlider = select('#baseRadiusSlider');
-  baseRadiusValue = select('#baseRadiusValue');
-  baseRadiusSlider.input(updateVisualization);
+    startDatePicker = document.querySelector('#startDatePicker');
+    endDatePicker = document.querySelector('#endDatePicker');
+    applyDateRangeButton = document.querySelector('#applyDateRangeButton');
+    childBirthDatePicker = document.querySelector('#childBirthDatePicker');
   
-  ringSpacingSlider = select('#ringSpacingSlider');
-  ringSpacingValue = select('#ringSpacingValue');
-  ringSpacingSlider.input(updateVisualization);
-
-  sleepLineWeightSlider = select('#sleepLineWeightSlider');
-  sleepLineWeightValue = select('#sleepLineWeightValue');
-  sleepLineWeightSlider.input(updateVisualization);
-
-  sleepColorPicker1 = select('#sleepColorPicker1');
-  sleepColorAlphaSlider1 = select('#sleepColorAlphaSlider1');
-  sleepColorAlphaValue1 = select('#sleepColorAlphaValue1');
-  sleepColorPicker1.input(updateVisualization);
-  sleepColorAlphaSlider1.input(updateVisualization);
-
-  sleepColorPicker2 = select('#sleepColorPicker2');
-  sleepColorAlphaSlider2 = select('#sleepColorAlphaSlider2');
-  sleepColorAlphaValue2 = select('#sleepColorAlphaValue2');
-  sleepColorPicker2.input(updateVisualization);
-  sleepColorAlphaSlider2.input(updateVisualization);
+    baseRadiusSlider = document.querySelector('#baseRadiusSlider');
+    baseRadiusValue = document.querySelector('#baseRadiusValue');
   
-  // 新しいカラーピッカーのUI要素を紐づける
-
-  textColorPicker = select('#textColorPicker');
-  textColorPicker.input(updateVisualization);
-
-  canvasBgColorPicker = select('#canvasBgColorPicker');
-canvasBgColorPicker.input(updateVisualization);
-
-
-  // 初期表示のために期間を生成し、可視化を更新
-  generateAllDatesInPeriod(); 
-  noLoop(); // draw() 関数は updateVisualization() でのみ呼び出されるようにする
-}
+    ringSpacingSlider = document.querySelector('#ringSpacingSlider');
+    ringSpacingValue = document.querySelector('#ringSpacingValue');
+  
+    sleepLineWeightSlider = document.querySelector('#sleepLineWeightSlider');
+    sleepLineWeightValue = document.querySelector('#sleepLineWeightValue');
+  
+    sleepColorPicker1 = document.querySelector('#sleepColorPicker1');
+    sleepColorAlphaSlider1 = document.querySelector('#sleepColorAlphaSlider1');
+    sleepColorAlphaValue1 = document.querySelector('#sleepColorAlphaValue1');
+  
+    sleepColorPicker2 = document.querySelector('#sleepColorPicker2');
+    sleepColorAlphaSlider2 = document.querySelector('#sleepColorAlphaSlider2');
+    sleepColorAlphaValue2 = document.querySelector('#sleepColorAlphaValue2');
+  
+    textColorPicker = document.querySelector('#textColorPicker');
+    canvasBgColorPicker = document.querySelector('#canvasBgColorPicker');
+  
+    //
+    // --- イベントリスナーの置き換え ---
+    //
+  
+    applyDateRangeButton.addEventListener('click', generateAllDatesInPeriod);
+    childBirthDatePicker.addEventListener('input', generateAllDatesInPeriod);
+  
+    startDatePicker.addEventListener('input', updateVisualization);
+    endDatePicker.addEventListener('input', updateVisualization);
+  
+    baseRadiusSlider.addEventListener('input', updateVisualization);
+    ringSpacingSlider.addEventListener('input', updateVisualization);
+    sleepLineWeightSlider.addEventListener('input', updateVisualization);
+  
+    sleepColorPicker1.addEventListener('input', updateVisualization);
+    sleepColorAlphaSlider1.addEventListener('input', updateVisualization);
+  
+    sleepColorPicker2.addEventListener('input', updateVisualization);
+    sleepColorAlphaSlider2.addEventListener('input', updateVisualization);
+  
+    textColorPicker.addEventListener('input', updateVisualization);
+    canvasBgColorPicker.addEventListener('input', updateVisualization);
+  
+    //
+    // --- 日付ピッカー初期値設定 ---
+    //
+    if (minDateFromData && maxDateFromData) {
+      startDatePicker.value = minDateFromData;
+      endDatePicker.value = maxDateFromData;
+    }
+  
+    //
+    // --- 初期レンダリング ---
+    //
+    generateAllDatesInPeriod();
+  
+    noLoop(); // ← p5.js の draw を止める
+  }
+  
 
 /**
  * 可視化の更新関数: UIコントロールの値に基づいて描画設定を更新し、再描画する
  */
 function updateVisualization() {
-  BASE_RADIUS = parseInt(baseRadiusSlider.value());
-  RING_SPACING = parseInt(ringSpacingSlider.value());
-  SLEEP_LINE_WEIGHT = parseInt(sleepLineWeightSlider.value());
+  BASE_RADIUS = parseInt(baseRadiusSlider.value);
+  RING_SPACING = parseInt(ringSpacingSlider.value);
+  SLEEP_LINE_WEIGHT = parseInt(sleepLineWeightSlider.value);
 
-  const sleepHex1 = sleepColorPicker1.value();
+  const sleepHex1 = sleepColorPicker1.value;
   const sleepR1 = unhex(sleepHex1.substring(1, 3));
   const sleepG1 = unhex(sleepHex1.substring(3, 5));
   const sleepB1 = unhex(sleepHex1.substring(5, 7));
-  const sleepA1 = parseInt(sleepColorAlphaSlider1.value());
+  const sleepA1 = parseInt(sleepColorAlphaSlider1.value);
   SLEEP_COLOR1 = color(sleepR1, sleepG1, sleepB1, sleepA1);
 
-  const sleepHex2 = sleepColorPicker2.value();
+  const sleepHex2 = sleepColorPicker2.value;
   const sleepR2 = unhex(sleepHex2.substring(1, 3));
   const sleepG2 = unhex(sleepHex2.substring(3, 5));
   const sleepB2 = unhex(sleepHex2.substring(5, 7));
-  const sleepA2 = parseInt(sleepColorAlphaSlider2.value());
+  const sleepA2 = parseInt(sleepColorAlphaSlider2.value);
   SLEEP_COLOR2 = color(sleepR2, sleepG2, sleepB2, sleepA2);
   
   // 新しいカラーピッカーのUI要素を紐づける
   
-  const textHex = textColorPicker.value();
+  const textHex = textColorPicker.value;
   TEXT_COLOR = color(unhex(textHex.substring(1, 3)), unhex(textHex.substring(3, 5)), unhex(textHex.substring(5, 7)));
 
-  const canvasBgR = unhex(canvasBgColorPicker.value().substring(1, 3));
-    const canvasBgG = unhex(canvasBgColorPicker.value().substring(3, 5));
-    const canvasBgB = unhex(canvasBgColorPicker.value().substring(5, 7));
+  const canvasBgR = unhex(canvasBgColorPicker.value.substring(1, 3));
+    const canvasBgG = unhex(canvasBgColorPicker.value.substring(3, 5));
+    const canvasBgB = unhex(canvasBgColorPicker.value.substring(5, 7));
     CANVAS_BG_COLOR = color(canvasBgR, canvasBgG, canvasBgB);
 
-  baseRadiusValue.html(BASE_RADIUS);
-  ringSpacingValue.html(RING_SPACING);
-  sleepLineWeightValue.html(SLEEP_LINE_WEIGHT);
-  sleepColorAlphaValue1.html(sleepA1);
-  sleepColorAlphaValue2.html(sleepA2);
+  baseRadiusValue.innerHTML =BASE_RADIUS;
+  ringSpacingValue.innerHTML =RING_SPACING;
+  sleepLineWeightValue.innerHTML =SLEEP_LINE_WEIGHT;
+  sleepColorAlphaValue1.innerHTML =sleepA1;
+  sleepColorAlphaValue2.innerHTML =sleepA2;
 
 
   redraw();
