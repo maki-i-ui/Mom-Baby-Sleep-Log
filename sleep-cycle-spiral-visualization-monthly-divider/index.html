@@ -116,24 +116,19 @@
         <h3>表示設定</h3>
         
         <div class="control-group">
-            <label for="rowHeightSlider">日の高さ (px):</label>
+            <label for="baseRadiusSlider">半径 (px):</label>
             <div class="slider-with-value">
-                <input type="range" id="rowHeightSlider" min="1" max="100" value="3">
-                <span id="rowHeightValue">3</span>
+                <input type="range" id="baseRadiusSlider" min="1" max="100" value="10">
+                <span id="baseRadiusValue">10</span>
             </div>
         </div>
         
         <div class="control-group">
-            <label for="rowGapSlider">日の間の隙間 (px):</label>
+            <label for="ringSpacingSlider">日の間の隙間 (px):</label>
             <div class="slider-with-value">
-                <input type="range" id="rowGapSlider" min="0" max="50" value="0">
-                <span id="rowGapValue">0</span>
+                <input type="range" id="ringSpacingSlider" min="0" max="50" value="1">
+                <span id="ringSpacingValue">1</span>
             </div>
-        </div>
-
-        <div class="control-group">
-            <label for="showTimeTextCheckbox">時刻テキストを表示:</label>
-            <input type="checkbox" id="showTimeTextCheckbox">
         </div>
 
         <h3>睡眠ラインの太さ</h3>
@@ -141,7 +136,7 @@
             <label for="sleepLineWeightSlider">ラインの太さ:</label>
             <div class="slider-with-value">
                 <input type="range" id="sleepLineWeightSlider" min="1" max="50" value="2">
-                <span id="sleepLineWeightValue">2</span> px
+                <span id="sleepLineWeightValue">1</span> px
             </div>
         </div>
 
@@ -184,14 +179,6 @@
 
         <h3>背景色設定</h3>
         <div class="control-group">
-            <label for="dayBgColorPicker">日中背景色 (7:00-19:00):</label>
-            <input type="color" id="dayBgColorPicker" value="#130b4b">
-        </div>
-        <div class="control-group">
-            <label for="nightBgColorPicker">夜間背景色 (19:00-翌6:59):</label>
-            <input type="color" id="nightBgColorPicker" value="#090040">
-        </div>
-        <div class="control-group">
             <label for="noRecordDayBgColorPicker1">記録なし日の背景色 (一人目):</label>
             <input type="color" id="noRecordDayBgColorPicker1" value="#3dffe8">
             <input type="range" id="noRecordDayBgAlphaSlider1" min="0" max="255" value="50">
@@ -208,22 +195,7 @@
             <input type="color" id="canvasBgColorPicker" value="#090040">
         </div>
 
-        <h3>補助線設定 (0:00)</h3>
-        <div class="control-group">
-            <label for="guideLineWeightSlider">補助線の太さ:</label>
-            <div class="slider-with-value">
-                <input type="range" id="guideLineWeightSlider" min="0" max="10" value="1">
-                <span id="guideLineWeightValue">1</span> px
-            </div>
-        </div>
-        <div class="control-group">
-            <label for="guideLineColorPicker">補助線の色:</label>
-            <div class="color-picker-group">
-                <input type="color" id="guideLineColorPicker" value="#FFFFFF">
-                <input type="range" id="guideLineAlphaSlider" min="0" max="255" value="100">
-                <span id="guideLineAlphaValue">100</span> (透明度)
-            </div>
-        </div>
+
 
     </div>
 
