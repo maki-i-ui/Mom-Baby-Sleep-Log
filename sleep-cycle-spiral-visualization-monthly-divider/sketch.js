@@ -115,220 +115,6 @@ function calculateMinMaxDatesFromData() {
 }
 
 /**
- * セットアップ関数: キャンバスの作成、UI要素の初期化、イベントリスナーの設定
- */
-function setup() {
-    
-
-  // --- UI要素の参照とイベントリスナーの設定 ---
-  toggleButton = select('#toggle-button');
-  controlsPanel = select('#controls');
-  toggleButton.mousePressed(toggleControlsPanel); // クリックイベントを設定
-
-
-  // --- UI要素の参照とイベントリスナーの設定 ---
-  startDatePicker = select('#startDatePicker');
-  endDatePicker = select('#endDatePicker');
-  applyDateRangeButton = select('#applyDateRangeButton');
-  applyDateRangeButton.mousePressed(generateAllDatesInPeriod); // ボタンクリックで日付範囲を生成・更新
-  childBirthDatePicker = select('#childBirthDatePicker'); // <-- 追加
-  childBirthDatePicker.input(generateAllDatesInPeriod); // 出生日変更時も再描画するように
-  
-  // データから計算した最小/最大日付を日付ピッカーの初期値に設定
-  if (minDateFromData && maxDateFromData) {
-    startDatePicker.value(minDateFromData);
-    endDatePicker.value(maxDateFromData);
-}
-  baseRadiusSlider = select('#baseRadiusSlider');
-  baseRadiusValue = select('#baseRadiusValue');
-  baseRadiusSlider.input(updateVisualization);
-  
-  ringSpacingSlider = select('#ringSpacingSlider');
-  ringSpacingValue = select('#ringSpacingValue');
-  ringSpacingSlider.input(updateVisualization);
-
-  sleepLineWeightSlider = select('#sleepLineWeightSlider');
-  sleepLineWeightValue = select('#sleepLineWeightValue');
-  sleepLineWeightSlider.input(updateVisualization);
-
-  sleepColorPicker1 = select('#sleepColorPicker1');
-  sleepColorAlphaSlider1 = select('#sleepColorAlphaSlider1');
-  sleepColorAlphaValue1 = select('#sleepColorAlphaValue1');
-  sleepColorPicker1.input(updateVisualization);
-  sleepColorAlphaSlider1.input(updateVisualization);
-
-  sleepColorPicker2 = select('#sleepColorPicker2');
-  sleepColorAlphaSlider2 = select('#sleepColorAlphaSlider2');
-  sleepColorAlphaValue2 = select('#sleepColorAlphaValue2');
-  sleepColorPicker2.input(updateVisualization);
-  sleepColorAlphaSlider2.input(updateVisualization);
-  
-  // 新しいカラーピッカーのUI要素を紐づける
-
-  textColorPicker = select('#textColorPicker');
-  textColorPicker.input(updateVisualization);
-
-  canvasBgColorPicker = select('#canvasBgColorPicker');
-canvasBgColorPicker.input(updateVisualization);
-
-
-  // 初期表示のために期間を生成し、可視化を更新
-  generateAllDatesInPeriod(); 
-  noLoop(); // draw() 関数は updateVisualization() でのみ呼び出されるようにする
-}
-function groupDatesByMonth(dateList) {
-    const map = {};
-  
-    dateList.forEach(d => {
-      const key = d.slice(0, 7); // "YYYY-MM"
-      if (!map[key]) map[key] = [];
-      map[key].push(d);
-    });
-  
-    return map; // 例: { "2024-10": [...dates], "2024-11": [...dates] }
-  }
-// g: createGraphics()で作ったもの
-// datesInMonth: その月の ["2024-10-01", "2024-10-02"...]
-function renderSpiralForMonth(g, datesInMonth) {
-
-    g.background(CANVAS_BG_COLOR);
-  
-    datesInMonth.forEach((dateStr, index) => {
-      const dayCycles = cyclesToDrawPerDay[dateStr] || { person1: [], person2: [] };
-  
-      drawSleepWakeCyclesSpiralOnGraphics(g, dayCycles.person1, SLEEP_COLOR1, dateStr, index);
-      drawSleepWakeCyclesSpiralOnGraphics(g, dayCycles.person2, SLEEP_COLOR2, dateStr, index);
-    });
-  }
-
-function renderAllMonths() {
-    const container = document.getElementById('monthly-spirals');
-    container.innerHTML = "";
-  
-    const grouped = groupDatesByMonth(allDatesInPeriod);
-    console.log(grouped)
-  
-    for (const month in grouped) {
-      const g = createGraphics(80, 80); // 好きなサイズ
-  
-      renderSpiralForMonth(g, grouped[month]);
-  
-      const imgURL = g.canvas.toDataURL();
-  
-      const div = document.createElement('div');
-      div.className = "month-container";
-      div.innerHTML = `
-         <h3>${month}</h3>
-         <img src="${imgURL}" />
-      `;
-      container.appendChild(div);
-    }
-  }
-
-
-
-/**
- * 指定された開始日から終了日までの全ての日付を生成し、allDatesInPeriodを更新する関数
- */
-function generateAllDatesInPeriod() {
-    const startDateStr = startDatePicker.value();
-    const endDateStr = endDatePicker.value();
-
-    if (!startDateStr || !endDateStr) {
-        console.warn("開始日と終了日を指定してください。");
-        allDatesInPeriod = [];
-        updateVisualization(); // 空の状態で可視化を更新
-        return;
-    }
-
-    const startDate = new Date(startDateStr);
-    const endDate = new Date(endDateStr);
-
-    if (startDate > endDate) {
-        console.warn("開始日は終了日より前である必要があります。");
-        allDatesInPeriod = [];
-        updateVisualization(); // 空の状態で可視化を更新
-        return;
-    }
-
-    allDatesInPeriod = [];
-    let currentDate = new Date(startDate);
-    while (currentDate <= endDate) {
-        // ISO形式 (YYYY-MM-DD) で日付文字列を追加
-        allDatesInPeriod.push(currentDate.toISOString().split('T')[0]);
-        currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    if (allDatesInPeriod.length === 0) {
-        console.warn("指定された期間内に日付が見つかりませんでした。");
-        createCanvas(windowWidth - select('#controls').width, windowHeight).parent(select('body'));
-        background(255);
-        textSize(20);
-        textAlign(CENTER, CENTER);
-        fill(0);
-        text("指定された期間内に日付が見つかりませんでした。", width / 2, height / 2);
-        noLoop();
-        return;
-    }
-
-    // 日付が生成された後、描画データを準備する関数を呼び出す
-    prepareSleepCyclesForDrawing(); 
-    // その後で可視化を更新（これにより redraw() が呼ばれる）
-    updateVisualization();
-}
-
-
-/**
- * 可視化の更新関数: UIコントロールの値に基づいて描画設定を更新し、再描画する
- */
-function updateVisualization() {
-  BASE_RADIUS = parseInt(baseRadiusSlider.value());
-  RING_SPACING = parseInt(ringSpacingSlider.value());
-  SLEEP_LINE_WEIGHT = parseInt(sleepLineWeightSlider.value());
-
-  const sleepHex1 = sleepColorPicker1.value();
-  const sleepR1 = unhex(sleepHex1.substring(1, 3));
-  const sleepG1 = unhex(sleepHex1.substring(3, 5));
-  const sleepB1 = unhex(sleepHex1.substring(5, 7));
-  const sleepA1 = parseInt(sleepColorAlphaSlider1.value());
-  SLEEP_COLOR1 = color(sleepR1, sleepG1, sleepB1, sleepA1);
-
-  const sleepHex2 = sleepColorPicker2.value();
-  const sleepR2 = unhex(sleepHex2.substring(1, 3));
-  const sleepG2 = unhex(sleepHex2.substring(3, 5));
-  const sleepB2 = unhex(sleepHex2.substring(5, 7));
-  const sleepA2 = parseInt(sleepColorAlphaSlider2.value());
-  SLEEP_COLOR2 = color(sleepR2, sleepG2, sleepB2, sleepA2);
-  
-  // 新しいカラーピッカーのUI要素を紐づける
-  
-  const textHex = textColorPicker.value();
-  TEXT_COLOR = color(unhex(textHex.substring(1, 3)), unhex(textHex.substring(3, 5)), unhex(textHex.substring(5, 7)));
-
-  const canvasBgR = unhex(canvasBgColorPicker.value().substring(1, 3));
-    const canvasBgG = unhex(canvasBgColorPicker.value().substring(3, 5));
-    const canvasBgB = unhex(canvasBgColorPicker.value().substring(5, 7));
-    CANVAS_BG_COLOR = color(canvasBgR, canvasBgG, canvasBgB);
-
-  baseRadiusValue.html(BASE_RADIUS);
-  ringSpacingValue.html(RING_SPACING);
-  sleepLineWeightValue.html(SLEEP_LINE_WEIGHT);
-  sleepColorAlphaValue1.html(sleepA1);
-  sleepColorAlphaValue2.html(sleepA2);
-
-
-  redraw();
-  renderAllMonths();
-}
-
-/**
- * メイン描画ループ: redraw()が呼び出された時のみ実行される
- */
-function draw() {
-}
-
-
-/**
  * 特定の人のデータにその日付のエントリが存在するかどうかをチェックします。
  * @param {object} data - チェックする睡眠データ (sleepData1 または sleepData2)
  * @param {string} date - チェックする日付文字列
@@ -447,6 +233,68 @@ function prepareSleepCyclesForDrawing() {
 }
 
 /**
+ * 指定された開始日から終了日までの全ての日付を生成し、allDatesInPeriodを更新する関数
+ */
+function generateAllDatesInPeriod() {
+    const startDateStr = startDatePicker.value();
+    const endDateStr = endDatePicker.value();
+
+    if (!startDateStr || !endDateStr) {
+        console.warn("開始日と終了日を指定してください。");
+        allDatesInPeriod = [];
+        updateVisualization(); // 空の状態で可視化を更新
+        return;
+    }
+
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
+
+    if (startDate > endDate) {
+        console.warn("開始日は終了日より前である必要があります。");
+        allDatesInPeriod = [];
+        updateVisualization(); // 空の状態で可視化を更新
+        return;
+    }
+
+    allDatesInPeriod = [];
+    let currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+        // ISO形式 (YYYY-MM-DD) で日付文字列を追加
+        allDatesInPeriod.push(currentDate.toISOString().split('T')[0]);
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    if (allDatesInPeriod.length === 0) {
+        console.warn("指定された期間内に日付が見つかりませんでした。");
+        createCanvas(windowWidth - select('#controls').width, windowHeight).parent(select('body'));
+        background(255);
+        textSize(20);
+        textAlign(CENTER, CENTER);
+        fill(0);
+        text("指定された期間内に日付が見つかりませんでした。", width / 2, height / 2);
+        noLoop();
+        return;
+    }
+
+    // 日付が生成された後、描画データを準備する関数を呼び出す
+    prepareSleepCyclesForDrawing(); 
+    // その後で可視化を更新（これにより redraw() が呼ばれる）
+    updateVisualization();
+}
+
+function groupDatesByMonth(dateList) {
+    const map = {};
+  
+    dateList.forEach(d => {
+      const key = d.slice(0, 7); // "YYYY-MM"
+      if (!map[key]) map[key] = [];
+      map[key].push(d);
+    });
+  
+    return map; // 例: { "2024-10": [...dates], "2024-11": [...dates] }
+  }
+
+  /**
  * 各日の睡眠・起床サイクルを横一列に描画します。(7:00-翌7:00基準)
  * @param {Array} cycles - 描画する睡眠サイクルデータの配列（すでにその行に描画すべきもののみ）
  * @param {p5.Color} color - 描画色
@@ -532,6 +380,161 @@ function drawSleepWakeCyclesSpiralOnGraphics(g, cycles, col, dateStr, dayIndex) 
 
     }
 }
+
+// g: createGraphics()で作ったもの
+// datesInMonth: その月の ["2024-10-01", "2024-10-02"...]
+function renderSpiralForMonth(g, datesInMonth) {
+
+    g.background(CANVAS_BG_COLOR);
+  
+    datesInMonth.forEach((dateStr, index) => {
+      const dayCycles = cyclesToDrawPerDay[dateStr] || { person1: [], person2: [] };
+  
+      drawSleepWakeCyclesSpiralOnGraphics(g, dayCycles.person1, SLEEP_COLOR1, dateStr, index);
+      drawSleepWakeCyclesSpiralOnGraphics(g, dayCycles.person2, SLEEP_COLOR2, dateStr, index);
+    });
+  }
+
+  function renderAllMonths() {
+    const container = document.getElementById('monthly-spirals');
+    container.innerHTML = "";
+  
+    const grouped = groupDatesByMonth(allDatesInPeriod);
+    console.log(grouped)
+  
+    for (const month in grouped) {
+      const g = createGraphics(80, 80); // 好きなサイズ
+  
+      renderSpiralForMonth(g, grouped[month]);
+  
+      const imgURL = g.canvas.toDataURL();
+  
+      const div = document.createElement('div');
+      div.className = "month-container";
+      div.innerHTML = `
+         <h3>${month}</h3>
+         <img src="${imgURL}" />
+      `;
+      container.appendChild(div);
+    }
+  }
+/**
+ * セットアップ関数: キャンバスの作成、UI要素の初期化、イベントリスナーの設定
+ */
+function setup() {
+    
+
+  // --- UI要素の参照とイベントリスナーの設定 ---
+  toggleButton = select('#toggle-button');
+  controlsPanel = select('#controls');
+  toggleButton.mousePressed(toggleControlsPanel); // クリックイベントを設定
+
+
+  // --- UI要素の参照とイベントリスナーの設定 ---
+  startDatePicker = select('#startDatePicker');
+  endDatePicker = select('#endDatePicker');
+  applyDateRangeButton = select('#applyDateRangeButton');
+  applyDateRangeButton.mousePressed(generateAllDatesInPeriod); // ボタンクリックで日付範囲を生成・更新
+  childBirthDatePicker = select('#childBirthDatePicker'); // <-- 追加
+  childBirthDatePicker.input(generateAllDatesInPeriod); // 出生日変更時も再描画するように
+  
+  // データから計算した最小/最大日付を日付ピッカーの初期値に設定
+  if (minDateFromData && maxDateFromData) {
+    startDatePicker.value(minDateFromData);
+    endDatePicker.value(maxDateFromData);
+}
+  baseRadiusSlider = select('#baseRadiusSlider');
+  baseRadiusValue = select('#baseRadiusValue');
+  baseRadiusSlider.input(updateVisualization);
+  
+  ringSpacingSlider = select('#ringSpacingSlider');
+  ringSpacingValue = select('#ringSpacingValue');
+  ringSpacingSlider.input(updateVisualization);
+
+  sleepLineWeightSlider = select('#sleepLineWeightSlider');
+  sleepLineWeightValue = select('#sleepLineWeightValue');
+  sleepLineWeightSlider.input(updateVisualization);
+
+  sleepColorPicker1 = select('#sleepColorPicker1');
+  sleepColorAlphaSlider1 = select('#sleepColorAlphaSlider1');
+  sleepColorAlphaValue1 = select('#sleepColorAlphaValue1');
+  sleepColorPicker1.input(updateVisualization);
+  sleepColorAlphaSlider1.input(updateVisualization);
+
+  sleepColorPicker2 = select('#sleepColorPicker2');
+  sleepColorAlphaSlider2 = select('#sleepColorAlphaSlider2');
+  sleepColorAlphaValue2 = select('#sleepColorAlphaValue2');
+  sleepColorPicker2.input(updateVisualization);
+  sleepColorAlphaSlider2.input(updateVisualization);
+  
+  // 新しいカラーピッカーのUI要素を紐づける
+
+  textColorPicker = select('#textColorPicker');
+  textColorPicker.input(updateVisualization);
+
+  canvasBgColorPicker = select('#canvasBgColorPicker');
+canvasBgColorPicker.input(updateVisualization);
+
+
+  // 初期表示のために期間を生成し、可視化を更新
+  generateAllDatesInPeriod(); 
+  noLoop(); // draw() 関数は updateVisualization() でのみ呼び出されるようにする
+}
+
+/**
+ * 可視化の更新関数: UIコントロールの値に基づいて描画設定を更新し、再描画する
+ */
+function updateVisualization() {
+  BASE_RADIUS = parseInt(baseRadiusSlider.value());
+  RING_SPACING = parseInt(ringSpacingSlider.value());
+  SLEEP_LINE_WEIGHT = parseInt(sleepLineWeightSlider.value());
+
+  const sleepHex1 = sleepColorPicker1.value();
+  const sleepR1 = unhex(sleepHex1.substring(1, 3));
+  const sleepG1 = unhex(sleepHex1.substring(3, 5));
+  const sleepB1 = unhex(sleepHex1.substring(5, 7));
+  const sleepA1 = parseInt(sleepColorAlphaSlider1.value());
+  SLEEP_COLOR1 = color(sleepR1, sleepG1, sleepB1, sleepA1);
+
+  const sleepHex2 = sleepColorPicker2.value();
+  const sleepR2 = unhex(sleepHex2.substring(1, 3));
+  const sleepG2 = unhex(sleepHex2.substring(3, 5));
+  const sleepB2 = unhex(sleepHex2.substring(5, 7));
+  const sleepA2 = parseInt(sleepColorAlphaSlider2.value());
+  SLEEP_COLOR2 = color(sleepR2, sleepG2, sleepB2, sleepA2);
+  
+  // 新しいカラーピッカーのUI要素を紐づける
+  
+  const textHex = textColorPicker.value();
+  TEXT_COLOR = color(unhex(textHex.substring(1, 3)), unhex(textHex.substring(3, 5)), unhex(textHex.substring(5, 7)));
+
+  const canvasBgR = unhex(canvasBgColorPicker.value().substring(1, 3));
+    const canvasBgG = unhex(canvasBgColorPicker.value().substring(3, 5));
+    const canvasBgB = unhex(canvasBgColorPicker.value().substring(5, 7));
+    CANVAS_BG_COLOR = color(canvasBgR, canvasBgG, canvasBgB);
+
+  baseRadiusValue.html(BASE_RADIUS);
+  ringSpacingValue.html(RING_SPACING);
+  sleepLineWeightValue.html(SLEEP_LINE_WEIGHT);
+  sleepColorAlphaValue1.html(sleepA1);
+  sleepColorAlphaValue2.html(sleepA2);
+
+
+  redraw();
+  renderAllMonths();
+}
+
+/**
+ * メイン描画ループ: redraw()が呼び出された時のみ実行される
+ */
+function draw() {
+}
+
+
+
+
+
+
 
 /**
  * A function to toggle the controls panel open and closed
