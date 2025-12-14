@@ -5,6 +5,9 @@ let allDatesInPeriod = []; // 期間内のすべての日付を格納する新�
 let minDateFromData = null;
 let maxDateFromData = null;
 // --- 可視化に関する設定変数 ---
+let monthWidth =320;
+let monthHeight =320;
+let RESOLUTION = 2;
 let BASE_RADIUS;
 let RING_SPACING;
 let SLEEP_LINE_WEIGHT; // 睡眠ラインの太さ
@@ -308,7 +311,8 @@ function groupDatesByMonth(dateList) {
  */
 function drawSleepWakeCyclesSpiralOnGraphics(g, cycles, col, dateStr, dayIndex) {
     if (!cycles || cycles.length === 0) return;
-
+    g.push();
+    g.scale(RESOLUTION);
     const colorRed = g.color(255, 80, 80);
     const colorBlue = g.color(80, 120, 255);
     const MAX_POSSIBLE_HOURS = 7;
@@ -327,8 +331,8 @@ function drawSleepWakeCyclesSpiralOnGraphics(g, cycles, col, dateStr, dayIndex) 
     const dayStartMs = new Date(d.setHours(0, 0, 0, 0)).getTime();
     const dayEndMs = dayStartMs + 24 * 60 * 60 * 1000;
 
-    const centerX = g.width / 2;
-    const centerY = g.height / 2;
+    const centerX = g.width / 2/RESOLUTION;
+    const centerY = g.height / 2/RESOLUTION;
 
     const baseR = BASE_RADIUS;
 
@@ -379,6 +383,7 @@ function drawSleepWakeCyclesSpiralOnGraphics(g, cycles, col, dateStr, dayIndex) 
         g.endShape();
 
     }
+    g.pop();
 }
 
 // g: createGraphics()で作ったもの
@@ -403,11 +408,13 @@ function renderSpiralForMonth(g, datesInMonth) {
     console.log(grouped)
   
     for (const month in grouped) {
-      const g = createGraphics(160, 160); // 好きなサイズ
+      const g = createGraphics(monthWidth* RESOLUTION, monthHeight* RESOLUTION); // 好きなサイズ
+      g.pixelDensity(1); 
   
       renderSpiralForMonth(g, grouped[month]);
   
       const imgURL = g.canvas.toDataURL();
+  
   
       const div = document.createElement('div');
       div.className = "month-container";
@@ -416,6 +423,9 @@ function renderSpiralForMonth(g, datesInMonth) {
          <img src="${imgURL}" />
       `;
       container.appendChild(div);
+      const img = div.querySelector('img');
+      img.style.width = (monthWidth) + 'px';
+      img.style.height = (monthHeight) + 'px';  
     }
   }
 /**
