@@ -25,6 +25,8 @@ let canvasBgColorPicker;
 let toggleButton; // 追加
 let controlsPanel; // 追加
 // --- 期間設定用のUI要素 ---
+let pregnancyStartDate; // Date
+let birthDate;          // Date
 let startDatePicker, endDatePicker, applyDateRangeButton,childBirthDatePicker;
 
 // --- 時間軸に関する定数 ---
@@ -126,6 +128,40 @@ function calculateMinMaxDatesFromData() {
 function hasDataEntryForPerson(data, date) {
     return data[date] !== undefined && data[date] !== null && data[date].length > 0;
 }
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const DAYS_PER_MONTH = 30;
+
+function getPregnancyOrPostpartumMonth(dateStr) {
+  const d = new Date(dateStr);
+  d.setHours(0,0,0,0);
+
+  const pregStartMs = pregnancyStartDate.getTime();
+  const birthMs = birthDate.getTime();
+  const t = d.getTime();
+
+  if (t < pregStartMs) return null;
+
+  // 妊娠中
+  if (t < birthMs) {
+    const days = Math.floor((t - pregStartMs) / MS_PER_DAY);
+    const monthIndex = Math.floor(days / DAYS_PER_MONTH);
+    return {
+      phase: 'pregnancy',
+      index: monthIndex,
+      label: `妊娠${monthIndex}ヶ月`
+    };
+  }
+
+  // 産後
+  const days = Math.floor((t - birthMs) / MS_PER_DAY);
+  const monthIndex = Math.floor(days / DAYS_PER_MONTH);
+  return {
+    phase: 'postpartum',
+    index: monthIndex,
+    label: `産後${monthIndex}ヶ月`
+  };
+}
+
 
 /**
  * 各日の睡眠・起床サイクルを描画するデータを事前に準備する関数
@@ -285,17 +321,47 @@ function generateAllDatesInPeriod() {
     updateVisualization();
 }
 
-function groupDatesByMonth(dateList) {
+// function groupDatesByMonth(dateList) {
+//     const map = {};
+  
+//     dateList.forEach(d => {
+//       const key = d.slice(0, 7); // "YYYY-MM"
+//       if (!map[key]) map[key] = [];
+//       map[key].push(d);
+//     });
+  
+//     return map; // 例: { "2024-10": [...dates], "2024-11": [...dates] }
+//   }
+function groupDatesByPregnancyPhase(dateList) {
     const map = {};
   
-    dateList.forEach(d => {
-      const key = d.slice(0, 7); // "YYYY-MM"
-      if (!map[key]) map[key] = [];
-      map[key].push(d);
+    dateList.forEach(dateStr => {
+      const info = getPregnancyOrPostpartumMonth(dateStr);
+      if (!info) return;
+  
+      const key = `${info.phase}-${info.index}`;
+  
+      if (!map[key]) {
+        map[key] = {
+          label: info.label,
+          phase: info.phase,
+          index: info.index,
+          dates: []
+        };
+      }
+  
+      map[key].dates.push(dateStr);
     });
   
-    return map; // 例: { "2024-10": [...dates], "2024-11": [...dates] }
+    // index順に並び替え
+    return Object.values(map).sort((a, b) => {
+      if (a.phase !== b.phase) {
+        return a.phase === 'pregnancy' ? -1 : 1;
+      }
+      return a.index - b.index;
+    });
   }
+  
 
   /**
  * 各日の睡眠・起床サイクルを横一列に描画します。(7:00-翌7:00基準)
@@ -400,39 +466,69 @@ function renderSpiralForMonth(g, datesInMonth) {
     });
   }
 
-  function renderAllMonths() {
+//   function renderAllMonths() {
+//     const container = document.getElementById('monthly-spirals');
+//     container.innerHTML = "";
+  
+//     const grouped = groupDatesByMonth(allDatesInPeriod);
+//     console.log(grouped)
+  
+//     for (const month in grouped) {
+//       const g = createGraphics(monthWidth* RESOLUTION, monthHeight* RESOLUTION); // 好きなサイズ
+//       g.pixelDensity(1); 
+  
+//       renderSpiralForMonth(g, grouped[month]);
+  
+//       const imgURL = g.canvas.toDataURL();
+  
+  
+//       const div = document.createElement('div');
+//       div.className = "month-container";
+//       div.innerHTML = `
+//          <h3>${month}</h3>
+//          <img src="${imgURL}" />
+//       `;
+//       container.appendChild(div);
+//       const img = div.querySelector('img');
+//       img.style.width = (monthWidth) + 'px';
+//       img.style.height = (monthHeight) + 'px';  
+//     }
+//   }
+function renderAllMonths() {
     const container = document.getElementById('monthly-spirals');
     container.innerHTML = "";
   
-    const grouped = groupDatesByMonth(allDatesInPeriod);
-    console.log(grouped)
+    const groups = groupDatesByPregnancyPhase(allDatesInPeriod);
   
-    for (const month in grouped) {
-      const g = createGraphics(monthWidth* RESOLUTION, monthHeight* RESOLUTION); // 好きなサイズ
-      g.pixelDensity(1); 
+    groups.forEach(group => {
+      const g = createGraphics(monthWidth * RESOLUTION, monthHeight * RESOLUTION);
+      g.pixelDensity(1);
   
-      renderSpiralForMonth(g, grouped[month]);
+      renderSpiralForMonth(g, group.dates);
   
       const imgURL = g.canvas.toDataURL();
-  
   
       const div = document.createElement('div');
       div.className = "month-container";
       div.innerHTML = `
-         <h3>${month}</h3>
-         <img src="${imgURL}" />
+        <h3>${group.label}</h3>
+        <img src="${imgURL}" />
       `;
       container.appendChild(div);
+  
       const img = div.querySelector('img');
-      img.style.width = (monthWidth) + 'px';
-      img.style.height = (monthHeight) + 'px';  
-    }
+      img.style.width = monthWidth + 'px';
+      img.style.height = monthHeight + 'px';
+    });
   }
 /**
  * セットアップ関数: キャンバスの作成、UI要素の初期化、イベントリスナーの設定
  */
 
 function setup() {  
+    pregnancyStartDate = new Date("2024-05-11");
+    birthDate = new Date("2025-01-18");
+
     toggleButton = document.querySelector('#toggle-button');
     controlsPanel = document.querySelector('#controls');
     toggleButton.addEventListener('click', toggleControlsPanel);
