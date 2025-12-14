@@ -403,7 +403,7 @@ function renderSpiralForMonth(g, datesInMonth) {
     console.log(grouped)
   
     for (const month in grouped) {
-      const g = createGraphics(80, 80); // 好きなサイズ
+      const g = createGraphics(160, 160); // 好きなサイズ
   
       renderSpiralForMonth(g, grouped[month]);
   
@@ -551,11 +551,13 @@ function draw() {
  * A function to toggle the controls panel open and closed
  */
 function toggleControlsPanel() {
-    controlsPanel.toggleClass('open');
-    if (controlsPanel.hasClass('open')) {
-        toggleButton.html('Close Settings Panel');
+    // class の ON/OFF
+    controlsPanel.classList.toggle('open');
+
+    if (controlsPanel.classList.contains('open')) {
+        toggleButton.textContent = 'Close Settings Panel';
     } else {
-        toggleButton.html('Open Settings Panel');
+        toggleButton.textContent = 'Open Settings Panel';
     }
 }
 
