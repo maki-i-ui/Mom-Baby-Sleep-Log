@@ -8,9 +8,33 @@ sketch.js
  ├─ setup() / updateVisualization()
  */
 
+ const monthGroups = [
+  {
+    label: '5 months',
+    description: 'Sleep became shorter and more fragmented.',
+    metrics: [
+      { value: 120 },
+      { value: 80 },
+      { value: 150 }
+    ],
+    spiralImages: [
+      'spiral_2023_05.png'
+    ]
+  },
+  {
+    label: '6 months',
+    description: 'Some nights were better. Some were not.',
+    spiralImages: [
+      'spiral_2023_06.png',
+      'spiral_2023_06_compare.png'
+    ]
+  }
+];
+
 let sleepData1; // 一人目のデータ
 let sleepData2; // 二人目のデータ
 let eventData;
+let descriptionData;
 let allDatesInPeriod = []; // 期間内のすべての日付を格納する新しい変数
 let minDateFromData = null;
 let maxDateFromData = null;
@@ -83,6 +107,11 @@ function preload() {
       calculateMinMaxDatesFromData();
      }
     });
+
+    // 説明文データをロード
+    loadJSON('../data/descriptions.json', (data) => { 
+      descriptionData = data; 
+      });
   }
 
 /**
@@ -464,52 +493,36 @@ function renderSpiralForMonth(g, datesInMonth) {
       drawSleepWakeCyclesSpiralOnGraphics(g, dayCycles.person2, SLEEP_COLOR2, dateStr, index);
     });
   }
-
-
-function createMonthComponent(group, imgURL) {
-  const div = document.createElement('section');
-  div.className = "month-container";
-
-  div.innerHTML = `
-    <div class="month-left">
-      <div class="month-label">${group.label}</div>
-      <!-- ここにバーやテキストを後で足せる -->
-    </div>
-
-    <div class="month-right">
-      <img class="month-spiral" src="${imgURL}" />
-    </div>
-  `;
-
-  const img = div.querySelector('img');
-  img.style.width = monthWidth + 'px';
-  img.style.height = monthHeight + 'px';
-
-  return div;
-}
+  function getDescription(data, phase, index) {
+    const item = data.find(
+      d => d.phase === phase && d.index === index
+    );
+    return item ? item.description : null;
+  }
 
 function renderAllMonths() {
   const container = document.getElementById('monthly-spirals');
-  container.innerHTML = "";
+  container.innerHTML = '';
 
-  const groups = groupDatesByPregnancyPhase(allDatesInPeriod);
-
-  groups.forEach(group => {
+  const dateGroups = groupDatesByPregnancyPhase(allDatesInPeriod);
+  dateGroups.forEach(dateGroup => {
     // ① 月キャンバス生成
     const g = createGraphics(monthWidth * RESOLUTION, monthHeight * RESOLUTION);
     g.pixelDensity(1);
 
     // ② 描画（pure）
-    renderSpiralForMonth(g, group.dates);
+    renderSpiralForMonth(g, dateGroup.dates);
 
     // ③ 画像化
     const imgURL = g.canvas.toDataURL();
 
-    // ④ DOM化
-    const monthEl = createMonthComponent(group, imgURL);
-    container.appendChild(monthEl);
+    const description = getDescription(descriptionData,dateGroup.phase,dateGroup.index)
+    const section = createMonthSection(dateGroup, imgURL,description);
+    container.appendChild(section);
   });
 }
+
+
 
 
 /**
@@ -517,6 +530,9 @@ function renderAllMonths() {
  */
 
 function setup() {  
+
+
+
     pregnancyStartDate = new Date("2024-05-11");
     birthDate = new Date("2025-01-18");
 
@@ -580,10 +596,16 @@ function setup() {
       endDatePicker.value = maxDateFromData;
     }
   
+    generateAllDatesInPeriod();
     //
     // --- 初期レンダリング ---
     //
-    generateAllDatesInPeriod();
+    noCanvas(); // DOMだけ使うなら
+
+    renderIntro('intro');
+    renderAllMonths();
+
+
   
     noLoop(); // ← p5.js の draw を止める
   }
