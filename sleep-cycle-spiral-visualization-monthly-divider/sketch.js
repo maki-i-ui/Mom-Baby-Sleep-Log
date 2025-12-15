@@ -321,17 +321,6 @@ function generateAllDatesInPeriod() {
     updateVisualization();
 }
 
-// function groupDatesByMonth(dateList) {
-//     const map = {};
-  
-//     dateList.forEach(d => {
-//       const key = d.slice(0, 7); // "YYYY-MM"
-//       if (!map[key]) map[key] = [];
-//       map[key].push(d);
-//     });
-  
-//     return map; // 例: { "2024-10": [...dates], "2024-11": [...dates] }
-//   }
 function groupDatesByPregnancyPhase(dateList) {
     const map = {};
   
