@@ -1,3 +1,13 @@
+/**
+sketch.js
+ ├─ preload()        // データロード
+ ├─ prepareSleepCyclesForDrawing()  // ★データ前処理
+ ├─ drawSleepWakeCyclesSpiralOnGraphics() // ★1日の描画
+ ├─ renderSpiralForMonth()           // ★月キャンバス描画
+ ├─ renderAllMonths()                // ★DOM生成
+ ├─ setup() / updateVisualization()
+ */
+
 let sleepData1; // 一人目のデータ
 let sleepData2; // 二人目のデータ
 let eventData;
@@ -455,61 +465,53 @@ function renderSpiralForMonth(g, datesInMonth) {
     });
   }
 
-//   function renderAllMonths() {
-//     const container = document.getElementById('monthly-spirals');
-//     container.innerHTML = "";
-  
-//     const grouped = groupDatesByMonth(allDatesInPeriod);
-//     console.log(grouped)
-  
-//     for (const month in grouped) {
-//       const g = createGraphics(monthWidth* RESOLUTION, monthHeight* RESOLUTION); // 好きなサイズ
-//       g.pixelDensity(1); 
-  
-//       renderSpiralForMonth(g, grouped[month]);
-  
-//       const imgURL = g.canvas.toDataURL();
-  
-  
-//       const div = document.createElement('div');
-//       div.className = "month-container";
-//       div.innerHTML = `
-//          <h3>${month}</h3>
-//          <img src="${imgURL}" />
-//       `;
-//       container.appendChild(div);
-//       const img = div.querySelector('img');
-//       img.style.width = (monthWidth) + 'px';
-//       img.style.height = (monthHeight) + 'px';  
-//     }
-//   }
+
+function createMonthComponent(group, imgURL) {
+  const div = document.createElement('section');
+  div.className = "month-container";
+
+  div.innerHTML = `
+    <div class="month-left">
+      <div class="month-label">${group.label}</div>
+      <!-- ここにバーやテキストを後で足せる -->
+    </div>
+
+    <div class="month-right">
+      <img class="month-spiral" src="${imgURL}" />
+    </div>
+  `;
+
+  const img = div.querySelector('img');
+  img.style.width = monthWidth + 'px';
+  img.style.height = monthHeight + 'px';
+
+  return div;
+}
+
 function renderAllMonths() {
-    const container = document.getElementById('monthly-spirals');
-    container.innerHTML = "";
-  
-    const groups = groupDatesByPregnancyPhase(allDatesInPeriod);
-  
-    groups.forEach(group => {
-      const g = createGraphics(monthWidth * RESOLUTION, monthHeight * RESOLUTION);
-      g.pixelDensity(1);
-  
-      renderSpiralForMonth(g, group.dates);
-  
-      const imgURL = g.canvas.toDataURL();
-  
-      const div = document.createElement('div');
-      div.className = "month-container";
-      div.innerHTML = `
-        <h3>${group.label}</h3>
-        <img src="${imgURL}" />
-      `;
-      container.appendChild(div);
-  
-      const img = div.querySelector('img');
-      img.style.width = monthWidth + 'px';
-      img.style.height = monthHeight + 'px';
-    });
-  }
+  const container = document.getElementById('monthly-spirals');
+  container.innerHTML = "";
+
+  const groups = groupDatesByPregnancyPhase(allDatesInPeriod);
+
+  groups.forEach(group => {
+    // ① 月キャンバス生成
+    const g = createGraphics(monthWidth * RESOLUTION, monthHeight * RESOLUTION);
+    g.pixelDensity(1);
+
+    // ② 描画（pure）
+    renderSpiralForMonth(g, group.dates);
+
+    // ③ 画像化
+    const imgURL = g.canvas.toDataURL();
+
+    // ④ DOM化
+    const monthEl = createMonthComponent(group, imgURL);
+    container.appendChild(monthEl);
+  });
+}
+
+
 /**
  * セットアップ関数: キャンバスの作成、UI要素の初期化、イベントリスナーの設定
  */
