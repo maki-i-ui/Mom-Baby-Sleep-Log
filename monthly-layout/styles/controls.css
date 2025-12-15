@@ -1,0 +1,78 @@
+#controls {
+    /* オーバーレイ表示のためのスタイルに変更 */
+    position: fixed;
+    top: 0;
+    left: -300px; /* 初期状態では画面外に隠す */
+    width: 300px;
+    height: 100vh;
+    padding: 15px;
+    background-color: #f0f0f0;
+    overflow-y: auto;
+    box-sizing: border-box;
+    transition: left 0.3s ease-in-out; /* アニメーションを追加 */
+    z-index: 2000; /* 他の要素の上に表示 */
+}
+#controls.open {
+    left: 0; /* 'open' クラスが付いたら画面内に表示 */
+}
+#toggle-button {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 2001; /* パネルの上に表示 */
+}
+#controls h2 {
+    margin-top: 0;
+    color: #333;
+}
+#controls h3 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+    color: #555;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 5px;
+}
+.control-group {
+    margin-bottom: 15px;
+}
+.control-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    font-size: 0.9em;
+    color: #666;
+}
+.slider-with-value {
+    display: flex;
+    align-items: center;
+}
+.slider-with-value input[type="range"] {
+    flex-grow: 1;
+    margin-right: 10px;
+}
+.color-picker-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.color-picker-group input[type="color"] {
+    width: 40px;
+    height: 30px;
+    border: none;
+    padding: 0;
+}
+canvas {
+    display: block;
+}
+.date-input-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.date-input-group label {
+    width: 80px;
+    margin-bottom: 0;
+}
+.date-input-group input[type="date"] {
+    flex-grow: 1;
+}

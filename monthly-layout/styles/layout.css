@@ -1,0 +1,7 @@
+#monthly-spirals {
+    display: flex;
+    flex-direction: column;
+    gap: 64px;
+    padding: 80px;
+    background: #090040;
+    }
