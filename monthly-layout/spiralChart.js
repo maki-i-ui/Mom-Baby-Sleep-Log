@@ -7,12 +7,18 @@ async function createMonthlySpiralImage({
     dates,
     width,
     height,
-    resolution
+    resolution,
+    person,
+    color
   }) {
     const g = createGraphics(width * resolution, height * resolution);
     g.pixelDensity(1);
   
-    renderSpiralForMonth(g, dates);
+    renderSpiralForMonth(
+        g,
+        dates,
+        person,      // 'person1' | 'person2'
+        color);
   
     const imgURL = g.canvas.toDataURL('image/png');
   
@@ -24,33 +30,59 @@ async function createMonthlySpiralImage({
      以下は完全に内部実装
      ========================= */
   
-  function renderSpiralForMonth(g, datesInMonth) {
+//   function renderSpiralForMonth(g, datesInMonth) {
+//     g.background(CANVAS_BG_COLOR);
+//     console.log(cyclesToDrawPerDay)
+  
+//     datesInMonth.forEach((dateStr, index) => {
+//       const dayCycles = cyclesToDrawPerDay[dateStr] || { person1: [], person2: [] };
+//       const dayStats  = sleepStatsToDrawPerDay[dateStr];
+  
+//       drawSleepWakeCyclesSpiralOnGraphics(
+//         g,
+//         dayCycles.person1,
+//         dayStats.person1,
+//         SLEEP_COLOR1,
+//         dateStr,
+//         index
+//       );
+  
+//       drawSleepWakeCyclesSpiralOnGraphics(
+//         g,
+//         dayCycles.person2,
+//         dayStats.person2,
+//         SLEEP_COLOR2,
+//         dateStr,
+//         index
+//       );
+//     });
+//   }
+function renderSpiralForMonth(
+    g,
+    datesInMonth,
+    personKey,      // 'person1' | 'person2'
+    sleepColor
+  ) {
     g.background(CANVAS_BG_COLOR);
   
     datesInMonth.forEach((dateStr, index) => {
-      const dayCycles = cyclesToDrawPerDay[dateStr] || { person1: [], person2: [] };
-      const dayStats  = sleepStatsToDrawPerDay[dateStr];
+      const dayCycles =
+        cyclesToDrawPerDay[dateStr]?.[personKey] || [];
+  
+      const dayStats =
+        sleepStatsToDrawPerDay[dateStr]?.[personKey];
   
       drawSleepWakeCyclesSpiralOnGraphics(
         g,
-        dayCycles.person1,
-        dayStats.person1,
-        SLEEP_COLOR1,
+        dayCycles,
+        dayStats,
+        sleepColor,
         dateStr,
         index
       );
-  
-    //   drawSleepWakeCyclesSpiralOnGraphics(
-    //     g,
-    //     dayCycles.person2,
-    //     dayStats.person2,
-    //     SLEEP_COLOR2,
-    //     dateStr,
-    //     index
-    //   );
     });
   }
-
+  
   /**
  * 螺旋状に睡眠サイクルを描画する関数
  */

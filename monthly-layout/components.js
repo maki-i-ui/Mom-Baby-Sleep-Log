@@ -23,12 +23,12 @@ function renderIntro(containerId) {
   /* =========================
      Month Section Component
   ========================= */
-  function createMonthSection(dateGroup, spiralImage,  barImage, description) {
+  function createMonthSection(dateGroup, spiralImage1,spiralImage2,barImage, description) {
     const section = document.createElement('section');
     section.className = 'month-section';
   
     section.appendChild(createMonthHeader(dateGroup,description));
-    section.appendChild(createMonthBody(dateGroup, spiralImage, barImage));
+    section.appendChild(createMonthBody(dateGroup, spiralImage1, spiralImage2,barImage));
     section.appendChild(createDivider());
   
     return section;
@@ -55,13 +55,13 @@ function renderIntro(containerId) {
   
   
   /* ---------- Body ---------- */
-  function createMonthBody(dateGroup, spiralImage,barImage) {
+  function createMonthBody(dateGroup, spiralImage1,spiralImage2,barImage) {
     const body = document.createElement('div');
     body.className = 'month-body';
   
     // body.appendChild(createLeftMetrics(dateGroup));
     body.appendChild(createLeftVisuals(barImage));
-    body.appendChild(createRightVisuals(spiralImage));
+    body.appendChild(createRightVisuals(spiralImage1,spiralImage2));
   
     return body;
   }
@@ -78,13 +78,17 @@ function renderIntro(containerId) {
       }
   
   /* ---------- Right Visuals ---------- */
-  function createRightVisuals(spiralImage) {
+  function createRightVisuals(spiralImage1,spiralImage2) {
     const right = document.createElement('div');
     right.className = 'month-visuals';
-    const img = document.createElement('img');
-    img.src = spiralImage;
-    img.className = 'spiral-img';
-    right.appendChild(img);
+    const img1 = document.createElement('img');
+    img1.src = spiralImage1;
+    img1.className = 'spiral1-img';
+    right.appendChild(img1);
+    const img2 = document.createElement('img');
+    img2.src = spiralImage2;
+    img2.className = 'spiral2-img';
+    right.appendChild(img2);
     return right;
   }
   
