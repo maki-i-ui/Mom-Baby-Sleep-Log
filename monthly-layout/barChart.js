@@ -1,16 +1,21 @@
-function generateMaxSleepBarChartImage(statsPerDay, options = {}) {
-    const {
-      width = 800,
-      height = 200,
-      barHeight = 2,
-      gap = 2,
-      bgColor = '#090040',
-      barColor1 = '#3dffe8',
-      barColor2 = '#fbff00',
-      maxHours = 7
-    } = options;
-  
-    const days = Object.keys(statsPerDay);
+/**
+ * barChart.js
+ * 月単位 最大連続睡眠時間のバー画像を生成して imgURL を返す
+ */
+
+async function createMonthlyMaxSleepBarImage({
+    dates,
+    statsPerDay,
+    width = 160,
+    barHeight = 4,
+    gap = 4,
+    maxHours = 7,
+    bgColor = '#090040',
+    barColor1 = '#3dffe8',
+    barColor2 = '#fbff00'
+  }) {
+
+    const height = dates.length * (barHeight * 2 + gap);
   
     const sketch = (p) => {
       let canvas;
@@ -25,14 +30,16 @@ function generateMaxSleepBarChartImage(statsPerDay, options = {}) {
   
         const maxMs = maxHours * 60 * 60 * 1000;
         const scaleX = width / maxMs;
-        days.forEach((date, i) => {
-          const y = i * (barHeight * 2 + gap) + 20;
+  
+        dates.forEach((date, i) => {
+          const y = i * (barHeight * 2 + gap);
   
           const p1 = statsPerDay[date]?.person1?.maxSleepMs ?? 0;
           const p2 = statsPerDay[date]?.person2?.maxSleepMs ?? 0;
-            
-          // person1
+  
           p.noStroke();
+  
+          // person1
           p.fill(barColor1);
           p.rect(0, y, p1 * scaleX, barHeight);
   
@@ -42,38 +49,19 @@ function generateMaxSleepBarChartImage(statsPerDay, options = {}) {
         });
       };
   
-      p.getImageURL = () => {
-        return canvas.elt.toDataURL('image/png');
-      };
+      p.getImageURL = () => canvas.elt.toDataURL('image/png');
     };
   
+    // p5 instance を DOM 外で生成
     const pInstance = new p5(sketch, document.createElement('div'));
   
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
+      // draw 完了を待つ（p5 の都合）
       setTimeout(() => {
-        resolve(pInstance.getImageURL());
+        const url = pInstance.getImageURL();
         pInstance.remove();
+        resolve(url);
       }, 0);
     });
   }
   
-
-async function createMonthlyMaxSleepBarImage(monthDates) {
-    const stats = {};
-
-    monthDates.forEach(date => {
-        if (sleepStatsToDrawPerDay[date]) {
-        stats[date] = sleepStatsToDrawPerDay[date];
-        }
-    });
-    const gap = 4;
-    const barHeight = 4;
-
-    return await generateMaxSleepBarChartImage(stats, {
-        width: 160,
-        height: monthDates.length * (gap + barHeight),
-        barHeight : barHeight,
-        gap : gap,
-        maxHours: 7
-    });
-}
