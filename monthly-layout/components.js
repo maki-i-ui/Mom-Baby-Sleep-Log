@@ -23,12 +23,12 @@ function renderIntro(containerId) {
   /* =========================
      Month Section Component
   ========================= */
-  function createMonthSection(dateGroup, spiralImage,description) {
+  function createMonthSection(dateGroup, spiralImage,  barImage, description) {
     const section = document.createElement('section');
     section.className = 'month-section';
   
     section.appendChild(createMonthHeader(dateGroup,description));
-    section.appendChild(createMonthBody(dateGroup, spiralImage));
+    section.appendChild(createMonthBody(dateGroup, spiralImage, barImage));
     section.appendChild(createDivider());
   
     return section;
@@ -55,38 +55,27 @@ function renderIntro(containerId) {
   
   
   /* ---------- Body ---------- */
-  function createMonthBody(dateGroup, spiralImage) {
+  function createMonthBody(dateGroup, spiralImage,barImage) {
     const body = document.createElement('div');
     body.className = 'month-body';
   
-    body.appendChild(createLeftMetrics(dateGroup));
+    // body.appendChild(createLeftMetrics(dateGroup));
+    body.appendChild(createLeftVisuals(barImage));
     body.appendChild(createRightVisuals(spiralImage));
   
     return body;
   }
   
-  
-  /* ---------- Left Metrics ---------- */
-  function createLeftMetrics(dateGroup) {
-    const left = document.createElement('div');
-    left.className = 'month-metrics';
-  
-    if (!dateGroup.metrics) return left;
-  
-    const bars = document.createElement('div');
-    bars.className = 'metrics-bars';
-  
-    dateGroup.metrics.forEach(m => {
-      const bar = document.createElement('div');
-      bar.className = 'metric-bar';
-      bar.style.width = `${m.value}px`;
-      bars.appendChild(bar);
-    });
-  
-    left.appendChild(bars);
-    return left;
-  }
-  
+    /* ---------- Left Visuals ---------- */
+    function createLeftVisuals(barImage) {
+        const left = document.createElement('div');
+        left.className = 'month-visuals';
+        const img = document.createElement('img');
+        img.src = barImage;
+        img.className = 'bar-img';
+        left.appendChild(img);
+        return left;
+      }
   
   /* ---------- Right Visuals ---------- */
   function createRightVisuals(spiralImage) {
@@ -96,8 +85,6 @@ function renderIntro(containerId) {
     img.src = spiralImage;
     img.className = 'spiral-img';
     right.appendChild(img);
-
-  
     return right;
   }
   

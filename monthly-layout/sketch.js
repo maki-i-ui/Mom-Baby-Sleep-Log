@@ -8,28 +8,6 @@ sketch.js
  ├─ setup() / updateVisualization()
  */
 
- const monthGroups = [
-  {
-    label: '5 months',
-    description: 'Sleep became shorter and more fragmented.',
-    metrics: [
-      { value: 120 },
-      { value: 80 },
-      { value: 150 }
-    ],
-    spiralImages: [
-      'spiral_2023_05.png'
-    ]
-  },
-  {
-    label: '6 months',
-    description: 'Some nights were better. Some were not.',
-    spiralImages: [
-      'spiral_2023_06.png',
-      'spiral_2023_06_compare.png'
-    ]
-  }
-];
 
 let sleepData1; // 一人目のデータ
 let sleepData2; // 二人目のデータ
@@ -300,11 +278,11 @@ function prepareSleepCyclesForDrawing() {
         sleepStatsToDrawPerDay[dateStr] = {
           person1: {
               totalSleepMs: 0,
-              longestSleepMs: 0
+              maxSleepMs: 0
           },
           person2: {
               totalSleepMs: 0,
-              longestSleepMs: 0
+              maxSleepMs: 0
           }
         };
       
@@ -321,9 +299,9 @@ function prepareSleepCyclesForDrawing() {
               p1.push(cycle);
   
               sleepStatsToDrawPerDay[dateStr].person1.totalSleepMs += durationMs;
-              sleepStatsToDrawPerDay[dateStr].person1.longestSleepMs =
+              sleepStatsToDrawPerDay[dateStr].person1.maxSleepMs =
                   Math.max(
-                      sleepStatsToDrawPerDay[dateStr].person1.longestSleepMs,
+                      sleepStatsToDrawPerDay[dateStr].person1.maxSleepMs,
                       durationMs
                   );
   
@@ -331,9 +309,9 @@ function prepareSleepCyclesForDrawing() {
               p2.push(cycle);
   
               sleepStatsToDrawPerDay[dateStr].person2.totalSleepMs += durationMs;
-              sleepStatsToDrawPerDay[dateStr].person2.longestSleepMs =
+              sleepStatsToDrawPerDay[dateStr].person2.maxSleepMs =
                   Math.max(
-                      sleepStatsToDrawPerDay[dateStr].person2.longestSleepMs,
+                      sleepStatsToDrawPerDay[dateStr].person2.maxSleepMs,
                       durationMs
                   );
           }
@@ -427,15 +405,7 @@ function groupDatesByPregnancyPhase(dateList) {
   }
   
 
-  /**
- * 各日の睡眠・起床サイクルを横一列に描画します。(7:00-翌7:00基準)
- * @param {Array} cycles - 描画する睡眠サイクルデータの配列（すでにその行に描画すべきもののみ）
- * @param {p5.Color} color - 描画色
- * @param {number} yBase - 描画する行のベースとなるY座標
- * @param {string} displayDateStr - 現在描画している行の基準となる日付文字列 (例: "2024-10-17")
- * @param {number} currentColumnYBase - 現在描画している列の基準Y座標
- * @param {number} currentColumnIndex - allDatesInPeriodにおける現在の描画列のインデックス
- */
+
 /**
  * 螺旋状に睡眠サイクルを描画する関数
  */
@@ -446,7 +416,7 @@ function drawSleepWakeCyclesSpiralOnGraphics(g, cycles,stats, col, dateStr, dayI
     const colorRed = g.color(255, 80, 80);
     const colorBlue = g.color(80, 120, 255);
     const MAX_POSSIBLE_HOURS = 7;
-    let maxHours = stats.longestSleepMs/ (1000 * 60 * 60)
+    let maxHours = stats.maxSleepMs/ (1000 * 60 * 60)
 
     let t = constrain(maxHours / MAX_POSSIBLE_HOURS, 0, 1);
     let colorVal = lerpColor(colorRed, colorBlue, t);
@@ -530,12 +500,15 @@ function renderSpiralForMonth(g, datesInMonth) {
     return item ? item.description : null;
   }
 
-function renderAllMonths() {
+async function renderAllMonths() {
   const container = document.getElementById('monthly-spirals');
   container.innerHTML = '';
+// const barImgURL = await createMonthlyMaxSleepBarImage(dateGroup.dates);
 
   const dateGroups = groupDatesByPregnancyPhase(allDatesInPeriod);
-  dateGroups.forEach(dateGroup => {
+
+  // dateGroups.forEach(dateGroup => {
+  for (const dateGroup of dateGroups) {
     // ① 月キャンバス生成
     const g = createGraphics(monthWidth * RESOLUTION, monthHeight * RESOLUTION);
     g.pixelDensity(1);
@@ -544,12 +517,16 @@ function renderAllMonths() {
     renderSpiralForMonth(g, dateGroup.dates);
 
     // ③ 画像化
-    const imgURL = g.canvas.toDataURL();
+    const spiralImgURL = g.canvas.toDataURL();
+    
+    const barImgURL = await createMonthlyMaxSleepBarImage(dateGroup.dates);
 
     const description = getDescription(descriptionData,dateGroup.phase,dateGroup.index)
-    const section = createMonthSection(dateGroup, imgURL,description);
+    const section = createMonthSection(dateGroup, spiralImgURL,barImgURL, description);
     container.appendChild(section);
-  });
+
+
+  }
 }
 
 
@@ -689,11 +666,6 @@ function updateVisualization() {
  */
 function draw() {
 }
-
-
-
-
-
 
 
 /**

@@ -1,10 +1,17 @@
-
 .month-header {
     display: grid;
     grid-template-columns: 160px 1fr;
     gap: 40px;
 }
-
+.month-body {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    }
+.bar-img {
+    width: 50%;
+    height: auto;
+}
 .spiral-img {
     width: 50%;
     height: auto;
