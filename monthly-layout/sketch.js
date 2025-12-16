@@ -73,6 +73,7 @@ const DISPLAY_END_MINUTE_ABSOLUTE = DISPLAY_END_HOUR * 60; // 翌7時の絶対�
 
 // 事前計算された描画データを格納するグローバル変数
 let cyclesToDrawPerDay = {};
+let sleepStatsToDrawPerDay = {};
 
 // The date of pregnancy day 0 (in YYYY-MM-DD format)
 const PREGNANCY_START_DATE = '2024-05-11'; 
@@ -209,6 +210,7 @@ function getPregnancyOrPostpartumMonth(dateStr) {
 
 function prepareSleepCyclesForDrawing() {
     cyclesToDrawPerDay = {}; 
+    sleepStatsToDrawPerDay = {};
 
     let allSleepCyclesWithAbsoluteTime = [];
 
@@ -294,20 +296,54 @@ function prepareSleepCyclesForDrawing() {
         let p1 = [];
         let p2 = [];
 
+        // ★ 統計初期化
+        sleepStatsToDrawPerDay[dateStr] = {
+          person1: {
+              totalSleepMs: 0,
+              longestSleepMs: 0
+          },
+          person2: {
+              totalSleepMs: 0,
+              longestSleepMs: 0
+          }
+        };
+      
         for (const cycle of allSleepCyclesWithAbsoluteTime) {
 
-            // ★ 睡眠の開始時点がこの期間と重なっている cycle をだけ「この日の描画対象」とする
-            const overlaps =
-                (rowStartMs <= cycle.sleepStartMs && cycle.sleepStartMs < rowEndMs);
-
-            if (overlaps) {
-                if (cycle.person === 1) p1.push(cycle);
-                else p2.push(cycle);
-            }
-        }
-
-        cyclesToDrawPerDay[dateStr] = { person1: p1, person2: p2 };
-    }
+          const overlaps =
+              (rowStartMs <= cycle.sleepStartMs && cycle.sleepStartMs < rowEndMs);
+  
+          if (!overlaps) continue;
+  
+          const durationMs = cycle.wakeEndMs - cycle.sleepStartMs;
+  
+          if (cycle.person === 1) {
+              p1.push(cycle);
+  
+              sleepStatsToDrawPerDay[dateStr].person1.totalSleepMs += durationMs;
+              sleepStatsToDrawPerDay[dateStr].person1.longestSleepMs =
+                  Math.max(
+                      sleepStatsToDrawPerDay[dateStr].person1.longestSleepMs,
+                      durationMs
+                  );
+  
+          } else {
+              p2.push(cycle);
+  
+              sleepStatsToDrawPerDay[dateStr].person2.totalSleepMs += durationMs;
+              sleepStatsToDrawPerDay[dateStr].person2.longestSleepMs =
+                  Math.max(
+                      sleepStatsToDrawPerDay[dateStr].person2.longestSleepMs,
+                      durationMs
+                  );
+          }
+      }
+  
+      cyclesToDrawPerDay[dateStr] = {
+          person1: p1,
+          person2: p2
+      };
+  }
 }
 
 /**
@@ -403,20 +439,14 @@ function groupDatesByPregnancyPhase(dateList) {
 /**
  * 螺旋状に睡眠サイクルを描画する関数
  */
-function drawSleepWakeCyclesSpiralOnGraphics(g, cycles, col, dateStr, dayIndex) {
+function drawSleepWakeCyclesSpiralOnGraphics(g, cycles,stats, col, dateStr, dayIndex) {
     if (!cycles || cycles.length === 0) return;
     g.push();
     g.scale(RESOLUTION);
     const colorRed = g.color(255, 80, 80);
     const colorBlue = g.color(80, 120, 255);
     const MAX_POSSIBLE_HOURS = 7;
-
-    let maxHours = 0;
-    cycles.forEach(cycle => {
-
-        const hours = (cycle.wakeEndMs - cycle.sleepStartMs) / (1000 * 60 * 60);
-        if (hours > maxHours) maxHours = hours;
-    });
+    let maxHours = stats.longestSleepMs/ (1000 * 60 * 60)
 
     let t = constrain(maxHours / MAX_POSSIBLE_HOURS, 0, 1);
     let colorVal = lerpColor(colorRed, colorBlue, t);
@@ -488,9 +518,9 @@ function renderSpiralForMonth(g, datesInMonth) {
   
     datesInMonth.forEach((dateStr, index) => {
       const dayCycles = cyclesToDrawPerDay[dateStr] || { person1: [], person2: [] };
-  
-      drawSleepWakeCyclesSpiralOnGraphics(g, dayCycles.person1, SLEEP_COLOR1, dateStr, index);
-      drawSleepWakeCyclesSpiralOnGraphics(g, dayCycles.person2, SLEEP_COLOR2, dateStr, index);
+      const dayStats = sleepStatsToDrawPerDay[dateStr] || { person1: [], person2: [] };
+      drawSleepWakeCyclesSpiralOnGraphics(g, dayCycles.person1,dayStats.person1, SLEEP_COLOR1, dateStr, index);
+      drawSleepWakeCyclesSpiralOnGraphics(g, dayCycles.person2, dayStats.person2, SLEEP_COLOR2, dateStr, index);
     });
   }
   function getDescription(data, phase, index) {
