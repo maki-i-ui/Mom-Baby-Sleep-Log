@@ -8,11 +8,13 @@ async function createMonthlyMaxSleepBarImage({
     statsPerDay,
     width = 160,
     barHeight = 4,
-    gap = 4,
+    gap = 8,
     maxHours = 7,
     bgColor = '#090040',
-    barColor1 = '#3dffe8',
-    barColor2 = '#fbff00'
+    totalBarColor1 = [255,255,0,100],
+    totalBarColor2 = [0,255,255,100],
+    maxBarColor1 = [255,255,0,100],
+    maxBarColor2 = [0,255,255,100]
   }) {
 
     const height = dates.length * (barHeight * 2 + gap);
@@ -34,18 +36,24 @@ async function createMonthlyMaxSleepBarImage({
         dates.forEach((date, i) => {
           const y = i * (barHeight * 2 + gap);
   
-          const p1 = statsPerDay[date]?.person1?.maxSleepMs ?? 0;
-          const p2 = statsPerDay[date]?.person2?.maxSleepMs ?? 0;
+          const p1_total = statsPerDay[date]?.person1?.totalSleepMs ?? 0;
+          const p2_total = statsPerDay[date]?.person2?.totalSleepMs ?? 0;
+          const p1_max = statsPerDay[date]?.person1?.maxSleepMs ?? 0;
+          const p2_max = statsPerDay[date]?.person2?.maxSleepMs ?? 0;
   
           p.noStroke();
   
           // person1
-          p.fill(barColor1);
-          p.rect(0, y, p1 * scaleX, barHeight);
+          p.fill(totalBarColor1);
+          p.rect(0, y, p1_total * scaleX, barHeight);
+          p.fill(maxBarColor1);
+          p.rect(0, y, p1_max * scaleX, barHeight);
   
           // person2
-          p.fill(barColor2);
-          p.rect(0, y + barHeight, p2 * scaleX, barHeight);
+          p.fill(totalBarColor2);
+          p.rect(0, y + barHeight, p2_max * scaleX, barHeight);
+          p.fill(maxBarColor2);
+          p.rect(0, y + barHeight, p2_max * scaleX, barHeight);
         });
       };
   
