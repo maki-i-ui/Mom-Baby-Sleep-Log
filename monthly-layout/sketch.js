@@ -406,7 +406,7 @@ async function renderAllMonths() {
 
   for (const dateGroup of dateGroups) {
 
-    const [spiralURL1,spiralURL2, barURL] = await Promise.all([
+    const [spiralURL1,spiralURL2, barURL1,barURL2] = await Promise.all([
       createMonthlySpiralImage({
         dates: dateGroup.dates,
         width: monthWidth,
@@ -427,12 +427,18 @@ async function renderAllMonths() {
       }),
       createMonthlyMaxSleepBarImage({
         dates: dateGroup.dates,
-        statsPerDay: sleepStatsToDrawPerDay
+        statsPerDay: sleepStatsToDrawPerDay,
+        person: 'person1'
+      }),
+      createMonthlyMaxSleepBarImage({
+        dates: dateGroup.dates,
+        statsPerDay: sleepStatsToDrawPerDay,
+        person: 'person2'
       })
     ]);
 
     const description = getDescription(descriptionData,dateGroup.phase,dateGroup.index)
-    const section = createMonthSection(dateGroup, spiralURL1,spiralURL2,barURL, description);
+    const section = createMonthSection(dateGroup, spiralURL1,spiralURL2,barURL1,barURL2, description);
     container.appendChild(section);
   }
 }

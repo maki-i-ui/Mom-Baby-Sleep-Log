@@ -23,12 +23,12 @@ function renderIntro(containerId) {
   /* =========================
      Month Section Component
   ========================= */
-  function createMonthSection(dateGroup, spiralImage1,spiralImage2,barImage, description) {
+  function createMonthSection(dateGroup, spiralImage1,spiralImage2,barImage1,barImage2, description) {
     const section = document.createElement('section');
     section.className = 'month-section';
   
     section.appendChild(createMonthHeader(dateGroup,description));
-    section.appendChild(createMonthBody(dateGroup, spiralImage1, spiralImage2,barImage));
+    section.appendChild(createMonthBody(dateGroup, spiralImage1, spiralImage2,barImage1,barImage2));
     section.appendChild(createDivider());
   
     return section;
@@ -55,42 +55,75 @@ function renderIntro(containerId) {
   
   
   /* ---------- Body ---------- */
-  function createMonthBody(dateGroup, spiralImage1,spiralImage2,barImage) {
+  function createMonthBody(dateGroup, spiralImage1,spiralImage2,barImage1,barImage2) {
     const body = document.createElement('div');
     body.className = 'month-body';
   
-    // body.appendChild(createLeftMetrics(dateGroup));
-    body.appendChild(createLeftVisuals(barImage));
-    body.appendChild(createRightVisuals(spiralImage1,spiralImage2));
+    const leftVisuals = createVisualArea(
+      'month-visuals-left',
+      { src: spiralImage1, className: 'spiral1-img' },
+      { src: barImage1, className: 'bar1-img' }
+    );
+    const rightVisuals = createVisualArea(
+      'month-visuals-right',
+      { src: barImage2, className: 'bar2-img' },
+      { src: spiralImage2, className: 'spiral2-img' }
+    );
+    
+    body.appendChild(leftVisuals);
+    body.appendChild(rightVisuals);
+
   
     return body;
   }
+  function createVisualArea(containerClass, leftImage, rightImage) {
+    const container = document.createElement('div');
+    container.className = containerClass;
   
-    /* ---------- Left Visuals ---------- */
-    function createLeftVisuals(barImage) {
-        const left = document.createElement('div');
-        left.className = 'month-visuals';
-        const img = document.createElement('img');
-        img.src = barImage;
-        img.className = 'bar-img';
-        left.appendChild(img);
-        return left;
-      }
+    const leftImg = document.createElement('img');
+    leftImg.src = leftImage.src;
+    leftImg.className = leftImage.className;
   
-  /* ---------- Right Visuals ---------- */
-  function createRightVisuals(spiralImage1,spiralImage2) {
-    const right = document.createElement('div');
-    right.className = 'month-visuals';
-    const img1 = document.createElement('img');
-    img1.src = spiralImage1;
-    img1.className = 'spiral1-img';
-    right.appendChild(img1);
-    const img2 = document.createElement('img');
-    img2.src = spiralImage2;
-    img2.className = 'spiral2-img';
-    right.appendChild(img2);
-    return right;
+    const rightImg = document.createElement('img');
+    rightImg.src = rightImage.src;
+    rightImg.className = rightImage.className;
+  
+    container.appendChild(leftImg);
+    container.appendChild(rightImg);
+  
+    return container;
   }
+  
+  
+  //   /* ---------- Left Visuals ---------- */
+  //   function createLeftVisuals(barImage1,barImage2) {
+  //       const left = document.createElement('div');
+  //       left.className = 'month-visuals-left';
+  //       const img1 = document.createElement('img');
+  //       img1.src = barImage1;
+  //       img1.className = 'bar1-img';
+  //       left.appendChild(img1);
+  //       const img2 = document.createElement('img');
+  //       img2.src = barImage2;
+  //       img2.className = 'bar2-img';
+  //       left.appendChild(img2);
+  //       return left;
+  //     }
+  
+  // /* ---------- Right Visuals ---------- */
+  // function createRightVisuals(spiralImage1,spiralImage2) {
+  //   const right = document.createElement('div');
+  //   right.className = 'month-visuals-right';
+  //   const img1 = document.createElement('img');
+  //   img1.src = spiralImage1;
+  //   img1.className = 'spiral1-img';
+  //   right.appendChild(img1);
+  //   const img2 = document.createElement('img');
+  //   img2.src = spiralImage2;
+  //   img2.className = 'spiral2-img';
+  //   right.appendChild(img2);
+  //   return right;
+  // }
   
   
   /* ---------- Divider ---------- */

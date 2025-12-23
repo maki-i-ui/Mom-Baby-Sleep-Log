@@ -8,15 +8,17 @@
     flex-direction: row;
     gap: 16px;
     }
-.bar-img {
-    width: 50%;
-    height: auto;
-}
-.spiral1-img {
-    width: 50%;
-    height: auto;
-}
-.spiral2-img {
-    width: 50%;
-    height: auto;
-}
+    .month-visuals-left,
+    .month-visuals-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .month-visuals-left img,
+    .month-visuals-right img {
+      flex: 1;
+      object-fit: contain;
+      max-width: 50%;
+      max-height: auto;
+    }
