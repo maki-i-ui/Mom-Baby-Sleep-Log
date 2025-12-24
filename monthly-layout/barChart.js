@@ -13,7 +13,7 @@ async function createMonthlyMaxSleepBarImage({
     maxHours = 7,
     bgColor = '#090040',
     totalBarColor = [255,255,0,100],
-    maxBarColor = [255,255,0,100],
+    maxBarColor = [255,255,0,255],
   }) {
 
     const height = dates.length * (barHeight * 2 + gap);

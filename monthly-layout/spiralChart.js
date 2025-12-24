@@ -26,37 +26,6 @@ async function createMonthlySpiralImage({
     return Promise.resolve(imgURL);
   }
   
-  /* =========================
-     以下は完全に内部実装
-     ========================= */
-  
-//   function renderSpiralForMonth(g, datesInMonth) {
-//     g.background(CANVAS_BG_COLOR);
-//     console.log(cyclesToDrawPerDay)
-  
-//     datesInMonth.forEach((dateStr, index) => {
-//       const dayCycles = cyclesToDrawPerDay[dateStr] || { person1: [], person2: [] };
-//       const dayStats  = sleepStatsToDrawPerDay[dateStr];
-  
-//       drawSleepWakeCyclesSpiralOnGraphics(
-//         g,
-//         dayCycles.person1,
-//         dayStats.person1,
-//         SLEEP_COLOR1,
-//         dateStr,
-//         index
-//       );
-  
-//       drawSleepWakeCyclesSpiralOnGraphics(
-//         g,
-//         dayCycles.person2,
-//         dayStats.person2,
-//         SLEEP_COLOR2,
-//         dateStr,
-//         index
-//       );
-//     });
-//   }
 function renderSpiralForMonth(
     g,
     datesInMonth,
