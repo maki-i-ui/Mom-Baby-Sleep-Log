@@ -1,24 +1,36 @@
+.month-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 .month-header {
-    display: grid;
-    grid-template-columns: 160px 1fr;
-    gap: 40px;
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 40px;
 }
 .month-body {
-    display: flex;
-    flex-direction: row;
-    gap: 16px;
-    }
-    .month-visuals-left,
-    .month-visuals-right {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  }
+
+.month-visuals-left,
+.month-visuals-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
     
-    .month-visuals-left img,
-    .month-visuals-right img {
-      flex: 1;
-      object-fit: contain;
-      max-width: 50%;
-      max-height: auto;
-    }
+img.spiral {
+  width: 320px;
+  height: 320px;
+}
+
+img.bar {
+  width: 80px;
+  height: 320px;
+}
+
+.month-visuals img {
+  object-fit: contain;
+}
