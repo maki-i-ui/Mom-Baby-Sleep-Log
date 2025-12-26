@@ -1,7 +1,7 @@
 /* =========================
    Intro Component
 ========================= */
-function renderIntro(containerId) {
+export function renderIntro(containerId) {
     const container = document.getElementById(containerId);
   
     const intro = document.createElement('div');
@@ -23,7 +23,7 @@ function renderIntro(containerId) {
   /* =========================
      Month Section Component
   ========================= */
-  function createMonthSection(dateGroup, spiralImage1,spiralImage2,barImage1,barImage2, description) {
+  export function createMonthSection(dateGroup, spiralImage1,spiralImage2,barImage1,barImage2, description) {
     const section = document.createElement('section');
     section.className = 'month-section';
   
