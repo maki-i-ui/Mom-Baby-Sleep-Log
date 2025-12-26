@@ -22,10 +22,7 @@ export const defaultTheme = {
       max: [80, 120, 255],
       maxHours: 7,
     },
-  
-    bars: {
-      total: [255, 255, 0, 100],
-      max: [255, 255, 0, 255],
-    },
+    emptyRing: [255, 255, 255, 30], // ← データなし日用
+    emptyBar: [255, 255, 255, 30],
   };
   

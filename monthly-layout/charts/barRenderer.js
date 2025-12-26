@@ -46,6 +46,7 @@ export function barRenderer({
     const totalSleepMs = stats?.totalSleepMs ?? 0;
     const maxSleepMs   = stats?.maxSleepMs   ?? 0;
     const color        = stats?.sleepColor; // ★ ここがポイント
+    const emptyColor   = theme?.emptyBar;
 
     p.noStroke();
 
@@ -55,7 +56,7 @@ export function barRenderer({
       p.rect(0, y, totalSleepMs * scaleX, barHeight);
     } else {
       // データなし日は薄いグレーなど（任意）
-      p.fill(255, 255, 255, 30);
+      p.fill(emptyColor);
       p.rect(0, y, maxMs * scaleX, barHeight);
     }
     
