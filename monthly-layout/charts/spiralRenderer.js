@@ -27,7 +27,6 @@ export function spiralRenderer({
         stats: dayData.stats,
         theme,
         config,
-        resolution
       });
     },
   });
@@ -41,7 +40,6 @@ function drawSpiralDay({
   stats,
   theme,
   config,
-  resolution
 }) {
   if (!cycles?.length || !stats) return;
 
@@ -61,8 +59,8 @@ function drawSpiralDay({
   const d = new Date(date);
   const dayStartMs = new Date(d.setHours(0, 0, 0, 0)).getTime();
 
-  const centerX = p.width / 2 / resolution;
-  const centerY = p.height / 2 / resolution;
+  const centerX = p.width / 2;
+  const centerY = p.height / 2 ;
 
 
   const rStart = config.BASE_RADIUS + index * config.RING_SPACING;

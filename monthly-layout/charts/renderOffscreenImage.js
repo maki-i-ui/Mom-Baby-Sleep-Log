@@ -1,11 +1,12 @@
 // renderOffscreenImage.js
-export function renderOffscreenImage({ width, height, draw }) {
+export function renderOffscreenImage({ width, height, resolution,draw }) {
     return new Promise((resolve) => {
       const sketch = (p) => {
         let canvas;
   
         p.setup = () => {
-          canvas = p.createCanvas(width, height);
+          p.pixelDensity(1);
+          canvas = p.createCanvas(width*resolution, height*resolution);
           p.noLoop();
         };
   

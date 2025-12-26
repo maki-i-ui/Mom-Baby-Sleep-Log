@@ -61,13 +61,13 @@ export function renderIntro(containerId) {
   
     const leftVisuals = createVisualArea(
       'month-visuals-left',
-      { src: spiralImage1, className: 'spiral1-img' },
-      { src: barImage1, className: 'bar1-img' }
+      { src: spiralImage1, className: 'spiral' },
+      { src: barImage1, className: 'bar' }
     );
     const rightVisuals = createVisualArea(
       'month-visuals-right',
-      { src: barImage2, className: 'bar2-img' },
-      { src: spiralImage2, className: 'spiral2-img' }
+      { src: barImage2, className: 'bar' },
+      { src: spiralImage2, className: 'spiral' }
     );
     
     body.appendChild(leftVisuals);

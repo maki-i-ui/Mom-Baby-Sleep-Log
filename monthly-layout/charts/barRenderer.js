@@ -10,11 +10,14 @@ export function barRenderer({
   barHeight = 4,
   gap = 8,
   maxHours = 7,
+  resolution = 1,
 }) {
   p.background(theme.bgColor);
+  p.scale(resolution);
 
+  const logicalWidth = p.width / resolution;
   const maxMs = maxHours * 60 * 60 * 1000;
-  const scaleX = p.width / maxMs;
+  const scaleX = logicalWidth / maxMs;
 
   renderMonthlyByDate({
     p,

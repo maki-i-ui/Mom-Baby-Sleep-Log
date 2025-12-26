@@ -8,6 +8,7 @@ export async function createMonthlyImage({
   person,
   width,
   height,
+  resolution,
   theme,
   config,
   ...rendererOptions
@@ -15,6 +16,7 @@ export async function createMonthlyImage({
   return renderOffscreenImage({
     width,
     height,
+    resolution,
     draw: (p) =>
       renderer({
         p,
