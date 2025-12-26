@@ -165,8 +165,8 @@ new p5((p) => {
     // 初期化
     for (const dateStr of allDatesInPeriod) {
       dailySleepData[dateStr] = {
-        person1: { cycles: [], stats: { totalSleepMs: 0, maxSleepMs: 0 } },
-        person2: { cycles: [], stats: { totalSleepMs: 0, maxSleepMs: 0 } }
+        person1: { cycles: [], stats: { totalSleepMs: 0, maxSleepMs: 0 ,sleepColor: null,} },
+        person2: { cycles: [], stats: { totalSleepMs: 0, maxSleepMs: 0 ,sleepColor: null,} }
       };
     }
   
@@ -243,6 +243,31 @@ new p5((p) => {
         day.cycles.push(cycle);
         day.stats.totalSleepMs += durationMs;
         day.stats.maxSleepMs = Math.max(day.stats.maxSleepMs, durationMs);
+      }
+      // ===== ★ 色計算をここで行う =====
+      for (const personKey of ["person1", "person2"]) {
+        const stats = dailySleepData[dateStr][personKey].stats;
+  
+        if (stats.maxSleepMs <= 0) {
+          stats.sleepColor = null;
+          continue;
+        }
+  
+        const { min, max, maxHours } = defaultTheme.sleepGradient;
+  
+        const t = Math.min(
+          stats.maxSleepMs / (1000 * 60 * 60) / maxHours,
+          1
+        );
+  
+        // p5 を使わない純粋な RGB 補間
+        const lerp = (a, b, t) => Math.round(a + (b - a) * t);
+  
+        stats.sleepColor = {
+          r: lerp(min[0], max[0], t),
+          g: lerp(min[1], max[1], t),
+          b: lerp(min[2], max[2], t),
+        };
       }
     }
   
