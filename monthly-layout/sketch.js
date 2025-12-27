@@ -44,7 +44,7 @@ new p5((p) => {
   p.preload=()=> {
     console.log("preload")
       // sleepData1の読み込み
-      p.loadJSON('../data/sleep_wake_data.json', (data) => {
+      p.loadJSON('../data/20251227_sleep_wake_data.json', (data) => {
         sleepData1 = data;
         // sleepData2も読み込まれているかチェックしてから日付計算を呼び出す
         if (sleepData2) { // sleepData2が先に読み込まれている場合
@@ -53,7 +53,7 @@ new p5((p) => {
       });
     
       // sleepData2の読み込み
-      p.loadJSON('../data/sleep_wake_data_2.json', (data) => {
+      p.loadJSON('../data/20251227_sleep_wake_data_2.json', (data) => {
         sleepData2 = data;
         // sleepData1も読み込まれているかチェックしてから日付計算を呼び出す
         if (sleepData1) { // sleepData1が先に読み込まれている場合
