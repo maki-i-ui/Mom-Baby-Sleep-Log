@@ -406,6 +406,7 @@ new p5((p) => {
           resolution: 2,
           theme: defaultTheme,
           config,
+          align: 'right',
         }),
         createMonthlyImage({
           renderer: barRenderer,
@@ -417,6 +418,7 @@ new p5((p) => {
           resolution: 2,
           theme: defaultTheme,
           config,
+          align: 'left',
         })
       ]);
 

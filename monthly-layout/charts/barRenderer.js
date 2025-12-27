@@ -3,14 +3,15 @@ import { renderMonthlyByDate } from './renderMonthlyByDate.js';
 
 export function barRenderer({
   p,
-  dates,          // 実データの日付配列（短くてもOK）
+  dates,
   data,
   person,
   theme,
-  barHeight = 4,  // UIで指定
+  barHeight = 4,
   maxHours = 16,
   resolution = 1,
-  fixedDayCount = 30, // 表示用固定日数
+  fixedDayCount = 30,
+  align = 'left', // ★ 'left' or 'right'
 }) {
   p.background(theme.bgColor);
   p.scale(resolution);
@@ -45,26 +46,43 @@ export function barRenderer({
 
     const totalSleepMs = stats?.totalSleepMs ?? 0;
     const maxSleepMs   = stats?.maxSleepMs   ?? 0;
-    const color        = stats?.sleepColor; // ★ ここがポイント
+    const color        = stats?.sleepColor;
     const emptyColor   = theme?.emptyBar;
+
+    const totalW = totalSleepMs * scaleX;
+    const maxW   = maxSleepMs   * scaleX;
+
+    // ★ ここが肝
+    const xTotal =
+      align === 'right'
+        ? logicalWidth - totalW
+        : 0;
+
+    const xMax =
+      align === 'right'
+        ? logicalWidth - maxW
+        : 0;
 
     p.noStroke();
 
-    // ===== total sleep（100% opacity）=====
+    // ===== total sleep（薄め）=====
     if (color) {
       p.fill(color.r, color.g, color.b, 128);
-      p.rect(0, y, totalSleepMs * scaleX, barHeight);
+      p.rect(xTotal, y, totalW, barHeight);
     } else {
-      // データなし日は薄いグレーなど（任意）
       p.fill(emptyColor);
-      p.rect(0, y, maxMs * scaleX, barHeight);
+      p.rect(
+        align === 'right' ? 0 : 0,
+        y,
+        logicalWidth,
+        barHeight
+      );
     }
-    
 
-    // ===== max sleep（50% opacity）=====
+    // ===== max sleep（濃い）=====
     if (color) {
       p.fill(color.r, color.g, color.b, 255);
-      p.rect(0, y, maxSleepMs * scaleX, barHeight);
+      p.rect(xMax, y, maxW, barHeight);
     }
   }
 }
